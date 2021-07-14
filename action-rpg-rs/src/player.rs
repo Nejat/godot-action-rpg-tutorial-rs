@@ -6,6 +6,10 @@ pub struct Player {
     velocity: Vector2,
 }
 
+const ACCELERATION: f32 = 25.0;
+const MAX_SPEED: f32 = 100.0;
+const FRICTION: f32 = 25.0;
+
 impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
         Player {
@@ -17,7 +21,7 @@ impl Player {
 #[methods]
 impl Player {
     #[export]
-    fn _physics_process(&mut self, owner: &KinematicBody2D, _delta: f32) {
+    fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::zero();
 
@@ -27,15 +31,18 @@ impl Player {
         input_vector.y = (input.get_action_strength("ui_down") -
             input.get_action_strength("ui_up")) as f32;
 
+        // in the video, the function "normalized" is used, which handles zero condition.
+        // godot-rust does not have that function, instead there is a try_normalize.
+        // since we only use the input_vector when it's none zero, I opted to use the
+        // "normalize" function after the check for zero.
+
         if input_vector != Vector2::zero() {
-            self.velocity = input_vector;
+            self.velocity += input_vector.normalize() * ACCELERATION * delta;
+            self.velocity = self.velocity.clamped(MAX_SPEED * delta)
         } else {
-            self.velocity = Vector2::zero()
+            self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta)
         }
 
-        match owner.move_and_collide(self.velocity, true, true, false) {
-            Some(_collision) => {}
-            None => {}
-        }
+        if let Some(_collision) = owner.move_and_collide(self.velocity, true, true, false) {}
     }
 }
