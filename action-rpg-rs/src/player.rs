@@ -3,7 +3,10 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::utils::get_node;
+use crate::child_node;
+use crate::get_parameter;
+
+type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
 #[derive(NativeClass)]
 #[inherit(KinematicBody2D)]
@@ -30,7 +33,8 @@ impl Player {
 impl Player {
     #[export]
     fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
-        let animation_player = get_node::<AnimationPlayer>(owner, "AnimationPlayer");
+        child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
+        get_parameter! { animation_tree, "parameters/playback" => animation_state: AnimationPlayback }
 
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::zero();
@@ -42,26 +46,20 @@ impl Player {
             input.get_action_strength("ui_up")) as f32;
 
         if input_vector != Vector2::zero() {
-            if input_vector.x > 0.0 {
-                animation_player.play("RunRight", -1.0, 1.0, false);
-            } else {
-                animation_player.play("RunLeft", -1.0, 1.0, false);
-            }
-
             // in the video, the function "normalized" is used, which handles zero condition.
             // godot-rust does not have that function, instead there is a try_normalize.
             // since we only use the input_vector when it's none zero, I opted to use the
             // "normalize" function after the check for zero.
+            input_vector = input_vector.normalize();
 
-            self.velocity = self.velocity.move_towards(input_vector.normalize() * MAX_SPEED, ACCELERATION * delta);
+            animation_state.travel("Run");
+            animation_tree.set("parameters/Idle/blend_position", input_vector);
+            animation_tree.set("parameters/Run/blend_position", input_vector);
+
+            self.velocity = self.velocity.move_towards(input_vector * MAX_SPEED, ACCELERATION * delta);
         } else {
+            animation_state.travel("Idle");
             self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta);
-
-            if self.velocity.x >= 0.0 {
-                animation_player.play("IdleRight", -1.0, 1.0, false);
-            } else {
-                animation_player.play("IdleLeft", -1.0, 1.0, false);
-            }
         }
 
         // FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the

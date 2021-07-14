@@ -1,6 +1,7 @@
 use gdnative::prelude::*;
 
 mod player;
+
 mod utils;
 
 fn init(handle: InitHandle) {
