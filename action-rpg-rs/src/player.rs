@@ -6,9 +6,9 @@ pub struct Player {
     velocity: Vector2,
 }
 
-const ACCELERATION: f32 = 25.0;
-const MAX_SPEED: f32 = 100.0;
-const FRICTION: f32 = 25.0;
+const ACCELERATION: f32 = 500.0;
+const MAX_SPEED: f32 = 80.0;
+const FRICTION: f32 = 500.0;
 
 impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
@@ -37,12 +37,11 @@ impl Player {
         // "normalize" function after the check for zero.
 
         if input_vector != Vector2::zero() {
-            self.velocity += input_vector.normalize() * ACCELERATION * delta;
-            self.velocity = self.velocity.clamped(MAX_SPEED * delta)
+            self.velocity = self.velocity.move_towards(input_vector.normalize() * MAX_SPEED, ACCELERATION * delta)
         } else {
             self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta)
         }
 
-        if let Some(_collision) = owner.move_and_collide(self.velocity, true, true, false) {}
+        if let Some(_collision) = owner.move_and_collide(self.velocity * delta, true, true, false) {}
     }
 }
