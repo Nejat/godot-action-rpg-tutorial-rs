@@ -1,3 +1,5 @@
+use std::f64::consts::FRAC_PI_4;
+
 use gdnative::prelude::*;
 
 #[derive(NativeClass)]
@@ -42,6 +44,12 @@ impl Player {
             self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta)
         }
 
-        if let Some(_collision) = owner.move_and_collide(self.velocity * delta, true, true, false) {}
+        // the additional values passed to "move_and_slide" here, that are not mentioned in
+        // the video, are listed in the api documentation and are probably defaults in gdscript
+        
+        // additionally FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the
+        // documented default value of 0.785398 for "floor_max_angle"
+
+        self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
     }
 }
