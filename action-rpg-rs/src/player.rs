@@ -8,10 +8,18 @@ use crate::get_parameter;
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
+#[allow(dead_code)]
+enum PlayerState {
+    Attack,
+    Move,
+    Roll,
+}
+
 #[derive(NativeClass)]
 #[inherit(KinematicBody2D)]
 pub struct Player {
     velocity: Vector2,
+    state: PlayerState,
 }
 
 const ACCELERATION: f32 = 500.0;
@@ -22,6 +30,7 @@ impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
         Player {
             velocity: Vector2::zero(),
+            state: PlayerState::Move,
         }
     }
 }
@@ -39,6 +48,20 @@ impl Player {
 
     #[export]
     fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
+        match self.state {
+            PlayerState::Move =>
+                self.move_state(owner, delta),
+            PlayerState::Attack =>
+                self.attack_state(owner, delta),
+            PlayerState::Roll => {}
+        }
+    }
+
+    #[inline]
+    fn attack_state(&mut self, _owner: &KinematicBody2D, _delta: f32) {}
+
+    #[inline]
+    fn move_state(&mut self, owner: &KinematicBody2D, delta: f32) {
         child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
         get_parameter! { animation_tree, "parameters/playback" => animation_state: AnimationPlayback }
 
