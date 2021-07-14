@@ -1,8 +1,34 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://World/Bush.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Player/Player.tscn" type="PackedScene" id=2]
 [ext_resource path="res://World/GrassBackground.png" type="Texture" id=3]
+[ext_resource path="res://World/DirtTileset.png" type="Texture" id=4]
+
+[sub_resource type="TileSet" id=1]
+0/name = "DirtTileset.png 0"
+0/texture = ExtResource( 4 )
+0/tex_offset = Vector2( 0, 0 )
+0/modulate = Color( 1, 1, 1, 1 )
+0/region = Rect2( 0, 0, 176, 80 )
+0/tile_mode = 1
+0/autotile/bitmask_mode = 1
+0/autotile/bitmask_flags = [ Vector2( 0, 0 ), 432, Vector2( 0, 1 ), 438, Vector2( 0, 2 ), 54, Vector2( 0, 3 ), 48, Vector2( 1, 0 ), 504, Vector2( 1, 1 ), 511, Vector2( 1, 2 ), 63, Vector2( 1, 3 ), 56, Vector2( 2, 0 ), 216, Vector2( 2, 1 ), 219, Vector2( 2, 2 ), 27, Vector2( 2, 3 ), 24, Vector2( 3, 0 ), 144, Vector2( 3, 1 ), 146, Vector2( 3, 2 ), 18, Vector2( 3, 3 ), 16, Vector2( 4, 0 ), 176, Vector2( 4, 1 ), 182, Vector2( 4, 2 ), 434, Vector2( 4, 3 ), 50, Vector2( 4, 4 ), 178, Vector2( 5, 0 ), 248, Vector2( 5, 1 ), 255, Vector2( 5, 2 ), 507, Vector2( 5, 3 ), 59, Vector2( 5, 4 ), 251, Vector2( 6, 0 ), 440, Vector2( 6, 1 ), 447, Vector2( 6, 2 ), 510, Vector2( 6, 3 ), 62, Vector2( 6, 4 ), 446, Vector2( 7, 0 ), 152, Vector2( 7, 1 ), 155, Vector2( 7, 2 ), 218, Vector2( 7, 3 ), 26, Vector2( 7, 4 ), 154, Vector2( 8, 0 ), 184, Vector2( 8, 1 ), 191, Vector2( 8, 2 ), 506, Vector2( 8, 3 ), 58, Vector2( 8, 4 ), 186, Vector2( 9, 0 ), 443, Vector2( 9, 1 ), 254, Vector2( 9, 2 ), 442, Vector2( 9, 3 ), 190, Vector2( 10, 2 ), 250, Vector2( 10, 3 ), 187 ]
+0/autotile/icon_coordinate = Vector2( 3, 3 )
+0/autotile/tile_size = Vector2( 16, 16 )
+0/autotile/spacing = 0
+0/autotile/occluder_map = [  ]
+0/autotile/navpoly_map = [  ]
+0/autotile/priority_map = [  ]
+0/autotile/z_index_map = [  ]
+0/occluder_offset = Vector2( 0, 0 )
+0/navigation_offset = Vector2( 0, 0 )
+0/shape_offset = Vector2( 0, 0 )
+0/shape_transform = Transform2D( 1, 0, 0, 1, 0, 0 )
+0/shape_one_way = false
+0/shape_one_way_margin = 0.0
+0/shapes = [  ]
+0/z_index = 0
 
 [node name="World" type="Node2D"]
 
@@ -11,6 +37,12 @@ position = Vector2( 160, 90 )
 texture = ExtResource( 3 )
 region_enabled = true
 region_rect = Rect2( 0, 0, 320, 180 )
+
+[node name="DirtPath" type="TileMap" parent="."]
+tile_set = SubResource( 1 )
+cell_size = Vector2( 16, 16 )
+format = 1
+tile_data = PoolIntArray( -65521, 0, 0, -65520, 0, 1, -65519, 0, 2, 15, 0, 65536, 16, 0, 65537, 17, 0, 65538, 65550, 0, 0, 65551, 0, 131078, 65552, 0, 65537, 65553, 0, 65538, 131085, 0, 0, 131086, 0, 131078, 131087, 0, 65537, 131088, 0, 65541, 131089, 0, 131074, 196620, 0, 0, 196621, 0, 131078, 196622, 0, 65541, 196623, 0, 131073, 196624, 0, 131074, 262148, 0, 0, 262149, 0, 1, 262150, 0, 1, 262151, 0, 2, 262155, 0, 0, 262156, 0, 131078, 262157, 0, 65541, 262158, 0, 131074, 393215, 0, 0, 327680, 0, 1, 327681, 0, 1, 327682, 0, 1, 327683, 0, 1, 327684, 0, 65545, 327685, 0, 131073, 327686, 0, 131073, 327687, 0, 9, 327688, 0, 2, 327691, 0, 65536, 327692, 0, 65541, 327693, 0, 131074, 458751, 0, 131072, 393216, 0, 131073, 393217, 0, 131073, 393218, 0, 131073, 393219, 0, 131073, 393220, 0, 131074, 393223, 0, 65536, 393224, 0, 65538, 393227, 0, 65536, 393228, 0, 65538, 458759, 0, 65536, 458760, 0, 65538, 458763, 0, 65536, 458764, 0, 65538, 524295, 0, 65536, 524296, 0, 65538, 524299, 0, 65536, 524300, 0, 131077, 524301, 0, 2, 589830, 0, 0, 589831, 0, 65545, 589832, 0, 131074, 589835, 0, 131072, 589836, 0, 65542, 589837, 0, 131077, 589838, 0, 1, 589839, 0, 1, 589840, 0, 2, 655365, 0, 0, 655366, 0, 65545, 655367, 0, 131074, 655372, 0, 131072, 655373, 0, 131073, 655374, 0, 65542, 655375, 0, 65537, 655376, 0, 131077, 655377, 0, 2, 720900, 0, 196608, 720901, 0, 196614, 720902, 0, 131074, 720910, 0, 131072, 720911, 0, 131073, 720912, 0, 131073, 720913, 0, 196613, 720914, 0, 196609, 720915, 0, 196610 )
 
 [node name="Playground" type="YSort" parent="."]
 
