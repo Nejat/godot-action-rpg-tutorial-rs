@@ -1,6 +1,9 @@
 use gdnative::prelude::*;
 
-fn init(_handle: InitHandle) {
+mod player;
+
+fn init(handle: InitHandle) {
+    handle.add_class::<player::Player>();
 }
 
 godot_init!(init);
