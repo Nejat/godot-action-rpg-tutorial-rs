@@ -32,6 +32,12 @@ impl Player {
 #[methods]
 impl Player {
     #[export]
+    fn _ready(&mut self, owner: &KinematicBody2D) {
+        child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
+        animation_tree.set_active(true);
+    }
+
+    #[export]
     fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
         child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
         get_parameter! { animation_tree, "parameters/playback" => animation_state: AnimationPlayback }
