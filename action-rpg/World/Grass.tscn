@@ -1,14 +1,26 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://World/Grass.png" type="Texture" id=1]
 [ext_resource path="res://World/Grass.gdns" type="Script" id=2]
+[ext_resource path="res://Colliders/HurtBox.tscn" type="PackedScene" id=3]
+
+[sub_resource type="RectangleShape2D" id=1]
+extents = Vector2( 7, 7 )
 
 [node name="Grass" type="Node2D"]
 script = ExtResource( 2 )
 
 [node name="Sprite" type="Sprite" parent="."]
-
-[node name="Grass" type="Sprite" parent="Sprite"]
 texture = ExtResource( 1 )
 centered = false
 offset = Vector2( -8, -8 )
+
+[node name="HurtBox" parent="." instance=ExtResource( 3 )]
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+position = Vector2( 8, 8 )
+shape = SubResource( 1 )
+
+[connection signal="area_entered" from="HurtBox" to="." method="_on_HurtBox_area_entered"]
+
+[editable path="HurtBox"]
