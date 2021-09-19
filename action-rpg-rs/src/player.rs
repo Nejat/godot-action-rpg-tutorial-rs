@@ -17,19 +17,22 @@ enum PlayerState {
 #[derive(NativeClass)]
 #[inherit(KinematicBody2D)]
 pub struct Player {
-    velocity: Vector2,
+    roll_vector: Vector2,
     state: PlayerState,
+    velocity: Vector2,
 }
 
 const ACCELERATION: f32 = 500.0;
-const MAX_SPEED: f32 = 80.0;
 const FRICTION: f32 = 500.0;
+const MAX_SPEED: f32 = 80.0;
+const ROLL_SPEED: f32 = 120.0;
 
 impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
         Player {
-            velocity: Vector2::zero(),
+            roll_vector: Vector2::new(-1.0, 0.0), // LEFT
             state: PlayerState::Move,
+            velocity: Vector2::zero(),
         }
     }
 }
@@ -52,9 +55,9 @@ impl Player {
             PlayerState::Move =>
                 self.move_state(owner, delta),
             PlayerState::Attack =>
-                self.attack_state(owner, delta),
+                self.attack_state(owner),
             PlayerState::Roll =>
-                self.roll_state(owner, delta)
+                self.roll_state(owner)
         }
     }
 
@@ -65,11 +68,12 @@ impl Player {
 
     #[export]
     fn roll_animation_finished(&mut self, _owner: &KinematicBody2D) {
+        self.velocity = self.velocity * 0.8; // ease sliding past roll animation
         self.state = PlayerState::Move
     }
 
     #[inline]
-    fn attack_state(&mut self, owner: &KinematicBody2D, _delta: f32) {
+    fn attack_state(&mut self, owner: &KinematicBody2D) {
         child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
         get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
 
@@ -98,6 +102,8 @@ impl Player {
             // "normalize" function after the check for zero.
             input_vector = input_vector.normalize();
 
+            self.roll_vector = input_vector;
+
             animation_tree.set("parameters/Idle/blend_position", input_vector);
             animation_tree.set("parameters/Run/blend_position", input_vector);
             animation_tree.set("parameters/Attack/blend_position", input_vector);
@@ -110,10 +116,7 @@ impl Player {
             self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta);
         }
 
-        // FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the
-        // documented default value of 0.785398 for "floor_max_angle"
-
-        self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+        self.move_player(owner);
 
         if input.is_action_just_pressed("ui_roll") {
             self.state = PlayerState::Roll
@@ -125,7 +128,20 @@ impl Player {
     }
 
     #[inline]
-    fn roll_state(&mut self, owner: &KinematicBody2D, delta: f32) {
-        
+    fn roll_state(&mut self, owner: &KinematicBody2D) {
+        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
+        get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
+
+        self.velocity = self.roll_vector * ROLL_SPEED;
+        animation_state.travel("Roll");
+        self.move_player(owner);
+    }
+
+    #[inline]
+    fn move_player(&mut self, owner: &KinematicBody2D) {
+        // FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the
+        // documented default value of 0.785398 for "floor_max_angle"
+
+        self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
     }
 }
