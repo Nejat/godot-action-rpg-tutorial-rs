@@ -63,6 +63,11 @@ impl Player {
         self.state = PlayerState::Move
     }
 
+    #[export]
+    fn roll_animation_finished(&mut self, _owner: &KinematicBody2D) {
+        self.state = PlayerState::Move
+    }
+
     #[inline]
     fn attack_state(&mut self, owner: &KinematicBody2D, _delta: f32) {
         child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
