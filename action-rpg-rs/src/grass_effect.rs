@@ -17,7 +17,7 @@ impl GrassEffect {
 impl GrassEffect {
     #[export]
     fn _ready(&mut self, owner: &Node2D) {
-        child_node! { owner, "AnimatedSprite" => animated_sprite: AnimatedSprite }
+        child_node! { animated_sprite: AnimatedSprite = owner["AnimatedSprite"] }
 
         animated_sprite.set_frame(0);
         animated_sprite.play("Animate", false);

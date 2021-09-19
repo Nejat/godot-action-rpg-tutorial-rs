@@ -42,7 +42,8 @@ impl Player {
 impl Player {
     #[export]
     fn _ready(&mut self, owner: &KinematicBody2D) {
-        child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
+        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
+
         animation_tree.set_active(true);
     }
 
@@ -64,8 +65,8 @@ impl Player {
 
     #[inline]
     fn attack_state(&mut self, owner: &KinematicBody2D, _delta: f32) {
-        child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
-        get_parameter! { animation_tree, "parameters/playback" => animation_state: AnimationPlayback }
+        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
+        get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
 
         self.velocity = Vector2::zero();
         animation_state.travel("Attack");
@@ -73,8 +74,8 @@ impl Player {
 
     #[inline]
     fn move_state(&mut self, owner: &KinematicBody2D, delta: f32) {
-        child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
-        get_parameter! { animation_tree, "parameters/playback" => animation_state: AnimationPlayback }
+        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
+        get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
 
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::zero();
