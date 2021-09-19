@@ -8,7 +8,6 @@ use crate::get_parameter;
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
-#[allow(dead_code)]
 enum PlayerState {
     Attack,
     Move,
@@ -54,7 +53,8 @@ impl Player {
                 self.move_state(owner, delta),
             PlayerState::Attack =>
                 self.attack_state(owner, delta),
-            PlayerState::Roll => {}
+            PlayerState::Roll =>
+                self.roll_state(owner, delta)
         }
     }
 
@@ -101,6 +101,7 @@ impl Player {
             animation_tree.set("parameters/Idle/blend_position", input_vector);
             animation_tree.set("parameters/Run/blend_position", input_vector);
             animation_tree.set("parameters/Attack/blend_position", input_vector);
+            animation_tree.set("parameters/Roll/blend_position", input_vector);
             animation_state.travel("Run");
 
             self.velocity = self.velocity.move_towards(input_vector * MAX_SPEED, ACCELERATION * delta);
@@ -114,8 +115,17 @@ impl Player {
 
         self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
 
+        if input.is_action_just_pressed("ui_roll") {
+            self.state = PlayerState::Roll
+        }
+
         if input.is_action_just_pressed("ui_attack") {
             self.state = PlayerState::Attack
         }
+    }
+
+    #[inline]
+    fn roll_state(&mut self, owner: &KinematicBody2D, delta: f32) {
+        
     }
 }
