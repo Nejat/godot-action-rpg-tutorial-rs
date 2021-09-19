@@ -57,8 +57,19 @@ impl Player {
         }
     }
 
+    #[export]
+    fn attack_animation_finished(&mut self, _owner: &KinematicBody2D) {
+        self.state = PlayerState::Move
+    }
+
     #[inline]
-    fn attack_state(&mut self, _owner: &KinematicBody2D, _delta: f32) {}
+    fn attack_state(&mut self, owner: &KinematicBody2D, _delta: f32) {
+        child_node! { owner, "AnimationTree" => animation_tree: AnimationTree }
+        get_parameter! { animation_tree, "parameters/playback" => animation_state: AnimationPlayback }
+
+        self.velocity = Vector2::zero();
+        animation_state.travel("Attack");
+    }
 
     #[inline]
     fn move_state(&mut self, owner: &KinematicBody2D, delta: f32) {
@@ -81,9 +92,10 @@ impl Player {
             // "normalize" function after the check for zero.
             input_vector = input_vector.normalize();
 
-            animation_state.travel("Run");
             animation_tree.set("parameters/Idle/blend_position", input_vector);
             animation_tree.set("parameters/Run/blend_position", input_vector);
+            animation_tree.set("parameters/Attack/blend_position", input_vector);
+            animation_state.travel("Run");
 
             self.velocity = self.velocity.move_towards(input_vector * MAX_SPEED, ACCELERATION * delta);
         } else {
@@ -95,5 +107,9 @@ impl Player {
         // documented default value of 0.785398 for "floor_max_angle"
 
         self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+
+        if input.is_action_just_pressed("ui_attack") {
+            self.state = PlayerState::Attack
+        }
     }
 }
