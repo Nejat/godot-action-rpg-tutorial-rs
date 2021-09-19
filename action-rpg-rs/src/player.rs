@@ -47,7 +47,7 @@ impl Player {
     }
 
     #[export]
-    fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
+    fn _process(&mut self, owner: &KinematicBody2D, delta: f32) {
         match self.state {
             PlayerState::Move =>
                 self.move_state(owner, delta),
