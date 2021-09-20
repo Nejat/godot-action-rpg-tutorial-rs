@@ -20,6 +20,7 @@ impl Grass {
     #[allow(non_snake_case)]
     fn _on_HurtBox_area_entered(&mut self, owner: &Node2D, _area: Ref<Area2D>) {
         // todo: refactor assume_safe_if macro to accept multiple expressions
+
         load_resource! { scene: PackedScene = "Effects/GrassEffect.tscn" {
             assume_safe_if! { let instance: Node2D = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED) => {
                 assume_safe_if! { let root = Node::get_tree(&owner) => {

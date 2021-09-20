@@ -5,6 +5,8 @@ use gdnative::prelude::*;
 
 use crate::child_node;
 use crate::get_parameter;
+use crate::safe;
+use crate::set_parameter;
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
@@ -17,8 +19,13 @@ enum PlayerState {
 #[derive(NativeClass)]
 #[inherit(KinematicBody2D)]
 pub struct Player {
+    // todo: when using Ref<T>, the placeholder values in "fn new" cause the following warning in godot
+    // todo: "WARNING: cleanup: ObjectDB instances leaked at exit"
+    animation_state: Option<Ref<AnimationPlayback>>,
+    animation_tree: Option<Ref<AnimationTree>>,
     roll_vector: Vector2,
     state: PlayerState,
+    sword: Option<Ref<Area2D>>,
     velocity: Vector2,
 }
 
@@ -30,8 +37,11 @@ const ROLL_SPEED: f32 = 120.0;
 impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
         Player {
+            animation_state: None,
+            animation_tree: None,
             roll_vector: Vector2::new(-1.0, 0.0), // LEFT
             state: PlayerState::Move,
+            sword: None,
             velocity: Vector2::zero(),
         }
     }
@@ -45,8 +55,14 @@ impl Player {
     #[export]
     fn _ready(&mut self, owner: &KinematicBody2D) {
         child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
+        get_parameter! { animation_state: AnimationPlayback = animation_tree[@"playback"] };
+        child_node! { sword: Area2D = owner["HitboxPivot/SwordHitbox"] }
 
         animation_tree.set_active(true);
+
+        self.sword = Some(sword.claim());
+        self.animation_tree = Some(animation_tree.claim());
+        self.animation_state = Some(animation_state.claim());
     }
 
     #[export]
@@ -73,19 +89,14 @@ impl Player {
     }
 
     #[inline]
-    fn attack_state(&mut self, owner: &KinematicBody2D) {
-        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
-        get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
-
+    fn attack_state(&mut self, _owner: &KinematicBody2D) {
         self.velocity = Vector2::zero();
-        animation_state.travel("Attack");
+
+        safe!(?self.animation_state).travel("Attack");
     }
 
     #[inline]
     fn move_state(&mut self, owner: &KinematicBody2D, delta: f32) {
-        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
-        get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
-
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::zero();
 
@@ -94,7 +105,6 @@ impl Player {
 
         input_vector.y = (input.get_action_strength("ui_down") -
             input.get_action_strength("ui_up")) as f32;
-
         if input_vector != Vector2::zero() {
             // in the video, the function "normalized" is used, which handles zero condition.
             // godot-rust does not have that function, instead there is a try_normalize.
@@ -104,15 +114,19 @@ impl Player {
 
             self.roll_vector = input_vector;
 
-            animation_tree.set("parameters/Idle/blend_position", input_vector);
-            animation_tree.set("parameters/Run/blend_position", input_vector);
-            animation_tree.set("parameters/Attack/blend_position", input_vector);
-            animation_tree.set("parameters/Roll/blend_position", input_vector);
-            animation_state.travel("Run");
+            set_parameter!{ ?self.sword; "knock_back_vector" = input_vector }
+
+            safe!(?self.animation_tree).set("parameters/Idle/blend_position", input_vector);
+            safe!(?self.animation_tree).set("parameters/Run/blend_position", input_vector);
+            safe!(?self.animation_tree).set("parameters/Attack/blend_position", input_vector);
+            safe!(?self.animation_tree).set("parameters/Roll/blend_position", input_vector);
+
+            safe!(?self.animation_state).travel("Run");
 
             self.velocity = self.velocity.move_towards(input_vector * MAX_SPEED, ACCELERATION * delta);
         } else {
-            animation_state.travel("Idle");
+            safe!(?self.animation_state).travel("Idle");
+
             self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta);
         }
 
@@ -129,11 +143,10 @@ impl Player {
 
     #[inline]
     fn roll_state(&mut self, owner: &KinematicBody2D) {
-        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
-        get_parameter! { animation_state: AnimationPlayback = animation_tree["playback"] }
-
         self.velocity = self.roll_vector * ROLL_SPEED;
-        animation_state.travel("Roll");
+
+        safe!(?self.animation_state).travel("Roll");
+
         self.move_player(owner);
     }
 

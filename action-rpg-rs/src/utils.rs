@@ -10,12 +10,61 @@ macro_rules! child_node {
 
 #[macro_export]
 macro_rules! get_parameter {
-    ($var:ident : $type:ty = $source:ident [ $param:literal ]) => {
+    ($var:ident : $type:ty = $source:ident [ @ $param:literal ]) => {
         let $var = $source.get(concat!("parameters/", $param))
             .try_to_object::<$type>()
             .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"parameters/", $param, "\""));
         let $var = unsafe { $var.assume_safe() };
-    }
+    };
+    ($var:ident : $type:ty = $source:ident [ $param:literal ]) => {
+        let $var = $source.get($param)
+            .try_to_object::<$type>()
+            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"", $param, "\""));
+        let $var = unsafe { $var.assume_safe() };
+    };
+}
+
+#[macro_export]
+macro_rules! get_ref_parameter {
+    ($source:ident [ $param:literal ] ) => {{
+        unsafe { $source.assume_safe() }.get($param)
+    }}
+}
+
+#[macro_export]
+macro_rules! safe {
+    (?$var:expr) => {
+        unsafe { $var.as_ref().unwrap().assume_safe() }
+    };
+    ($var:expr) => {
+        unsafe { $var.assume_safe() }
+    };
+}
+
+#[macro_export]
+macro_rules! set_parameter {
+    (?$var:expr; $($param:literal = $value:expr),*) => {unsafe {
+        let argument = $var.as_ref().unwrap().assume_safe();
+        $(
+            argument.set($param, $value);
+        )*
+    }};
+    ($var:expr; $($param:literal = $value:expr),*) => {unsafe {
+        let argument = $var.assume_safe();
+        $(
+            argument.set($param, $value);
+        )*
+    }};
+}
+
+#[macro_export]
+macro_rules! set_parameters {
+    ($var:expr; $($param:literal = $value:expr),*) => {unsafe {
+        let argument = $var.assume_safe();
+        $(
+            argument.set(concat!("parameters/", $param), $value);
+        )*
+    }};
 }
 
 #[macro_export]
