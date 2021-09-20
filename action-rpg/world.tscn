@@ -547,34 +547,14 @@ position = Vector2( 48, 144 )
 [node name="Grass6" parent="Playground/Grass" instance=ExtResource( 6 )]
 position = Vector2( 240, 0 )
 
-[node name="Grass2" type="YSort" parent="Playground"]
+[node name="Grass7" parent="Playground/Grass" instance=ExtResource( 6 )]
+position = Vector2( 160, 112 )
 
-[node name="Grass" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 32, 144 )
-
-[node name="Grass2" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 16, 144 )
-
-[node name="Grass3" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 48, 128 )
-
-[node name="Grass4" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 32, 32 )
-
-[node name="Grass5" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 48, 144 )
-
-[node name="Grass6" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 224, 0 )
-
-[node name="Grass7" parent="Playground/Grass2" instance=ExtResource( 6 )]
+[node name="Grass8" parent="Playground/Grass" instance=ExtResource( 6 )]
 position = Vector2( 272, 112 )
 
-[node name="Grass8" parent="Playground/Grass2" instance=ExtResource( 6 )]
+[node name="Grass9" parent="Playground/Grass" instance=ExtResource( 6 )]
 position = Vector2( 272, 96 )
 
-[node name="Grass9" parent="Playground/Grass2" instance=ExtResource( 6 )]
+[node name="Grass10" parent="Playground/Grass" instance=ExtResource( 6 )]
 position = Vector2( 256, 112 )
-
-[node name="Grass10" parent="Playground/Grass2" instance=ExtResource( 6 )]
-position = Vector2( 160, 112 )
