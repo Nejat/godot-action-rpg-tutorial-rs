@@ -1,7 +1,7 @@
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::assume_safe_if;
+use crate::safe;
 use crate::load_resource;
 
 #[derive(NativeClass)]
@@ -22,9 +22,9 @@ impl Grass {
         // todo: refactor assume_safe_if macro to accept multiple expressions
 
         load_resource! { scene: PackedScene = "Effects/GrassEffect.tscn" {
-            assume_safe_if! { let instance: Node2D = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED) => {
-                assume_safe_if! { let root = Node::get_tree(&owner) => {
-                    assume_safe_if! { let current = root.current_scene()  => {
+            safe! { let instance: Node2D = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED) => {
+                safe! { let root = Node::get_tree(&owner) => {
+                    safe! { let current = root.current_scene()  => {
                         current.add_child(instance, false);
                         instance.set_global_position(owner.global_position());
                     } }
