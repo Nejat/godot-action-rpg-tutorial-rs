@@ -1,6 +1,6 @@
 if ($args -eq "release") {
     cargo build --release
-} else {
+} elseif ($args -eq "debug") {
     cargo build
 }
 
