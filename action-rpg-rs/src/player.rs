@@ -5,7 +5,7 @@ use gdnative::prelude::*;
 
 use crate::child_node;
 use crate::get_parameter;
-use crate::safe;
+use crate::assume_safe;
 use crate::set_parameter;
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
@@ -92,7 +92,7 @@ impl Player {
     fn attack_state(&mut self, _owner: &KinematicBody2D) {
         self.velocity = Vector2::zero();
 
-        safe!(?self.animation_state).travel("Attack");
+        assume_safe!(self.animation_state).travel("Attack");
     }
 
     #[inline]
@@ -116,16 +116,16 @@ impl Player {
 
             set_parameter!{ ?self.sword; "knock_back_vector" = input_vector }
 
-            safe!(?self.animation_tree).set("parameters/Idle/blend_position", input_vector);
-            safe!(?self.animation_tree).set("parameters/Run/blend_position", input_vector);
-            safe!(?self.animation_tree).set("parameters/Attack/blend_position", input_vector);
-            safe!(?self.animation_tree).set("parameters/Roll/blend_position", input_vector);
+            assume_safe!(self.animation_tree).set("parameters/Idle/blend_position", input_vector);
+            assume_safe!(self.animation_tree).set("parameters/Run/blend_position", input_vector);
+            assume_safe!(self.animation_tree).set("parameters/Attack/blend_position", input_vector);
+            assume_safe!(self.animation_tree).set("parameters/Roll/blend_position", input_vector);
 
-            safe!(?self.animation_state).travel("Run");
+            assume_safe!(self.animation_state).travel("Run");
 
             self.velocity = self.velocity.move_towards(input_vector * MAX_SPEED, ACCELERATION * delta);
         } else {
-            safe!(?self.animation_state).travel("Idle");
+            assume_safe!(self.animation_state).travel("Idle");
 
             self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta);
         }
@@ -145,7 +145,7 @@ impl Player {
     fn roll_state(&mut self, owner: &KinematicBody2D) {
         self.velocity = self.roll_vector * ROLL_SPEED;
 
-        safe!(?self.animation_state).travel("Roll");
+        assume_safe!(self.animation_state).travel("Roll");
 
         self.move_player(owner);
     }

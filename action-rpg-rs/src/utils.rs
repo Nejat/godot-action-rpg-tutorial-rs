@@ -90,21 +90,16 @@ macro_rules! set_parameter {
 }
 
 #[macro_export]
-macro_rules! safe {
-    (?$var:expr) => {
+macro_rules! assume_safe {
+    ($var:expr) => {
         unsafe { $var.as_ref().unwrap().assume_safe() }
     };
-    ($var:expr) => {
-        unsafe { $var.assume_safe() }
-    };
-    (let $var:ident : $type:ty = $src: expr => $code: block) => {
-        if let Some($var) = $src.and_then(|v| { let v = unsafe { v.assume_safe() }; v.cast::<$type>() }) {
-            $code
-        }
-    };
-    (let $var:ident = $src: expr => $code: block) => {
-        if let Some($var) = $src.and_then(|v| { let v = unsafe { v.assume_safe() }; Some(v) }) {
-            $code
-        }
+    ($(let $var:ident : $type:ty = $src:expr),* => $code:block) => {
+        $(
+            let $var: TRef<$type> = $src
+                .and_then(|v| { unsafe { v.assume_safe().cast::<$type>() } })
+                .expect(concat!(stringify!($var), ":", stringify!($type), " = ", stringify!($src)));
+        )*
+        $code
     };
 }
