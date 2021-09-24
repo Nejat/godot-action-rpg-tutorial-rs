@@ -1,10 +1,8 @@
 [gd_resource type="NativeScript" load_steps=2 format=2]
 
-[sub_resource type="GDNativeLibrary" id=1]
-entry/Windows.64 = "res://action-rpg.dll"
-dependency/Windows.64 = [  ]
+[ext_resource path="res://action_rpg_tutorial_library.gdnlib" type="GDNativeLibrary" id=1]
 
 [resource]
 resource_name = "Grass"
 class_name = "Grass"
-library = SubResource( 1 )
+library = ExtResource( 1 )
