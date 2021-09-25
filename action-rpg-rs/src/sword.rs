@@ -9,7 +9,7 @@ pub(crate) const KNOCK_BACK_VECTOR: &'static str = "knock_back_vector";
 pub struct Sword {
     #[property(default = 1)]
     damage: i64,
-    #[property]
+    #[property(no_editor)]
     knock_back_vector: Vector2,
 }
 
