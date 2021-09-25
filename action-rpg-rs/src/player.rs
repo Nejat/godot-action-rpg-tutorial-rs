@@ -39,7 +39,7 @@ impl Player {
         Player {
             animation_state: None,
             animation_tree: None,
-            roll_vector: Vector2::new(-1.0, 0.0), // LEFT
+            roll_vector: Vector2::new(0.0, 1.0), // DOWN
             state: PlayerState::Move,
             sword: None,
             velocity: Vector2::zero(),
