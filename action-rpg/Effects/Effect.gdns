@@ -4,5 +4,5 @@
 
 [resource]
 resource_name = "GrassEffect"
-class_name = "GrassEffect"
+class_name = "Effect"
 library = ExtResource( 1 )
