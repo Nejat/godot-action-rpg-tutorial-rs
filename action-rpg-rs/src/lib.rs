@@ -3,6 +3,7 @@ use gdnative::prelude::*;
 mod bat;
 mod effect;
 mod grass;
+mod has_effect;
 mod player;
 mod stats;
 mod sword;
