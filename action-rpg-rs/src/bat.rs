@@ -7,7 +7,7 @@ use crate::child_node;
 use crate::get_parameter;
 use crate::set_parameter;
 use crate::stats::PROPERTY_HEALTH;
-use crate::sword::KNOCK_BACK_VECTOR;
+use crate::sword::{DAMAGE, KNOCK_BACK_VECTOR};
 
 const FRICTION: f32 = 200.0;
 const KNOCK_BACK_FORCE: f32 = 120.0;
@@ -46,7 +46,8 @@ impl Bat {
     #[export]
     #[allow(non_snake_case)]
     fn _on_HurtBox_area_entered(&mut self, _owner: &KinematicBody2D, area: Ref<Area2D>) {
-        let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
+        let damage = get_parameter!(area[DAMAGE]).to_i64();
+        let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - damage;
 
         set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
         self.knock_back = get_parameter!(area[KNOCK_BACK_VECTOR]).to_vector2() * KNOCK_BACK_FORCE;
