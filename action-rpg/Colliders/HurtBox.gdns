@@ -1,0 +1,8 @@
+[gd_resource type="NativeScript" load_steps=2 format=2]
+
+[ext_resource path="res://action_rpg_tutorial_library.gdnlib" type="GDNativeLibrary" id=1]
+
+[resource]
+resource_name = "HurtBox"
+class_name = "HurtBox"
+library = ExtResource( 1 )

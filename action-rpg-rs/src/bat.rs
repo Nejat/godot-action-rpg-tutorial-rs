@@ -73,7 +73,7 @@ impl Bat {
     #[export]
     #[allow(non_snake_case)]
     fn _on_Stats_no_health(&self, owner: &KinematicBody2D) {
-        self.play_effect(owner);
+        self.play_effect_parent(owner);
         owner.queue_free();
     }
 }
