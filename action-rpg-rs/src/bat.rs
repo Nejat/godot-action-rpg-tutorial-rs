@@ -5,6 +5,8 @@ use gdnative::prelude::*;
 
 use crate::child_node;
 use crate::get_parameter;
+use crate::has_effect::HasEffect;
+use crate::load_resource;
 use crate::set_parameter;
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{DAMAGE, KNOCK_BACK_VECTOR};
@@ -15,13 +17,21 @@ const KNOCK_BACK_FORCE: f32 = 120.0;
 #[derive(NativeClass)]
 #[inherit(KinematicBody2D)]
 pub struct Bat {
+    effect: Option<Ref<PackedScene>>,
     knock_back: Vector2,
     stats: Option<Ref<Node>>,
+}
+
+impl HasEffect for Bat {
+    fn effect_scene(&self) -> &Option<Ref<PackedScene>> {
+        &self.effect
+    }
 }
 
 impl Bat {
     fn new(_owner: &KinematicBody2D) -> Self {
         Bat {
+            effect: None,
             knock_back: Vector2::zero(),
             stats: None,
         }
@@ -32,6 +42,10 @@ impl Bat {
 impl Bat {
     #[export]
     fn _ready(&mut self, owner: &KinematicBody2D) {
+        load_resource! { scene: PackedScene = "Effects/EnemyDeathEffect.tscn" {
+            self.effect = Some(scene.claim())
+        } }
+
         child_node! { stats = owner["Stats"] }
 
         self.stats = Some(stats)
@@ -59,6 +73,7 @@ impl Bat {
     #[export]
     #[allow(non_snake_case)]
     fn _on_Stats_no_health(&self, owner: &KinematicBody2D) {
+        self.play_effect(owner);
         owner.queue_free();
     }
 }
