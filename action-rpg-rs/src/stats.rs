@@ -29,15 +29,15 @@ impl Stats {
     fn register(builder: &ClassBuilder<Self>) {
         builder
             .add_property::<Health>(PROPERTY_MAX_HEALTH)
-            .with_getter(|s: &Stats, _| s.max_health)
-            .with_setter(Stats::set_max_health)
+            .with_getter(|s: &Self, _| s.max_health)
+            .with_setter(Self::set_max_health)
             .with_default(DEFAULT_HEALTH)
             .done();
 
         builder
             .add_property::<Health>(PROPERTY_HEALTH)
-            .with_getter(|s: &Stats, _| s.health)
-            .with_setter(Stats::set_health)
+            .with_getter(|s: &Self, _| s.health)
+            .with_setter(Self::set_health)
             .with_default(DEFAULT_HEALTH)
             .done();
 

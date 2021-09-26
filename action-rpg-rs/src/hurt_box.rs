@@ -4,11 +4,16 @@ use gdnative::prelude::*;
 use crate::has_effect::HasEffect;
 use crate::load_resource;
 
+pub(crate) const PROPERTY_SHOW_HIT: &str = "show_hit";
+
+const DEFAULT_SHOW_HIT: bool = true;
+
 #[derive(NativeClass)]
 #[inherit(Node2D)]
+#[register_with(Self::register)]
 pub struct HurtBox {
     effect: Option<Ref<PackedScene>>,
-    #[property(default = true)]
+    #[property]
     show_hit: bool,
 }
 
@@ -22,8 +27,17 @@ impl HurtBox {
     fn new(_owner: &Node2D) -> Self {
         HurtBox {
             effect: None,
-            show_hit: true
+            show_hit: DEFAULT_SHOW_HIT
         }
+    }
+
+    fn register(builder: &ClassBuilder<Self>) {
+        builder
+            .add_property::<bool>(PROPERTY_SHOW_HIT)
+            .with_getter(|s: &Self, _| s.show_hit)
+            .with_setter(|s: &mut Self, _, value: bool| s.show_hit = value)
+            .with_default(DEFAULT_SHOW_HIT)
+            .done();
     }
 }
 
