@@ -6,12 +6,14 @@ mod grass;
 mod has_effect;
 mod hurt_box;
 mod player;
+mod player_detection;
 mod stats;
 mod sword;
 
 mod utils;
 
 fn init(handle: InitHandle) {
+    handle.add_class::<player_detection::PlayerDetectionZone>();
     handle.add_class::<hurt_box::HurtBox>();
     handle.add_class::<stats::Stats>();
     handle.add_class::<sword::Sword>();
