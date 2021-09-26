@@ -3,10 +3,12 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
+use crate::call;
 use crate::child_node;
 use crate::get_parameter;
 use crate::has_effect::HasEffect;
 use crate::load_resource;
+use crate::player_detection::{METHOD_CAN_SEE_PLAYER, METHOD_GET_PLAYER};
 use crate::set_parameter;
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
@@ -42,9 +44,10 @@ pub struct Bat {
     knock_back_force: f32,
     #[property]
     max_speed: f32,
+    player_detection: Option<Ref<Area2D>>,
     state: BatState,
     stats: Option<Ref<Node>>,
-    velocity: Vector2
+    velocity: Vector2,
 }
 
 impl HasEffect for Bat {
@@ -62,9 +65,10 @@ impl Bat {
             knock_back: Vector2::zero(),
             knock_back_force: DEFAULT_KNOCK_BACK_FORCE,
             max_speed: DEFAULT_MAX_SPEED,
-            state: BatState::CHASE,
+            player_detection: None,
+            state: BatState::IDLE,
             stats: None,
-            velocity: Vector2::zero()
+            velocity: Vector2::zero(),
         }
     }
 
@@ -109,21 +113,48 @@ impl Bat {
 
         child_node! { stats = owner["Stats"] }
 
-        self.stats = Some(stats)
+        self.stats = Some(stats);
+
+        child_node! { player_detection: Area2D = owner["PlayerDetectionZone"] }
+
+        self.player_detection = Some(player_detection.claim());
     }
 
     #[export]
     fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
         self.knock_back = owner.move_and_slide(
             self.knock_back.move_towards(Vector2::zero(), self.friction * delta),
-            Vector2::zero(), false, 4, FRAC_PI_4, true
+            Vector2::zero(), false, 4, FRAC_PI_4, true,
         );
 
         match self.state {
-            BatState::CHASE => {}
-            BatState::IDLE =>
-                self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta),
+            BatState::CHASE => {
+                let player = call!(self.player_detection; METHOD_GET_PLAYER: KinematicBody2D);
+
+                if let Some(player) = player {
+                    let mut direction = unsafe { player.assume_safe().global_position() } - owner.global_position();
+                    if direction != Vector2::zero() {
+                        direction = direction.normalize();
+                    }
+                    self.velocity = self.velocity.move_towards(direction * self.max_speed, self.acceleration * delta);
+                } else {
+                    self.state = BatState::IDLE
+                }
+            }
+            BatState::IDLE => {
+                self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
+                self.seek_player(owner);
+            }
             BatState::WANDER => {}
+        }
+
+        owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+    }
+
+    fn seek_player(&mut self, _owner: &KinematicBody2D) {
+        let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER).to_bool();
+        if can_see_player {
+            self.state = BatState::CHASE
         }
     }
 
