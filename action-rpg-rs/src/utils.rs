@@ -14,6 +14,22 @@ macro_rules! assume_safe {
 }
 
 #[macro_export]
+macro_rules! auto_load {
+    (claim $node:literal : $type:ty) => {
+        unsafe { autoload::<$type>($node).unwrap().claim() }
+    };
+    ($node:literal : $type:ty) => {
+        unsafe { autoload::<$type>($node).unwrap() }
+    };
+    (claim $node:ident : $type:ty) => {
+        unsafe { autoload::<$type>($node).unwrap().claim() }
+    };
+    ($node:ident : $type:ty) => {
+        unsafe { autoload::<$type>($node).unwrap() }
+    };
+}
+
+#[macro_export]
 macro_rules! call {
     ($src:expr; $method:literal) => {
         unsafe {
