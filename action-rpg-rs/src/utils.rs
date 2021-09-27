@@ -59,6 +59,16 @@ macro_rules! call {
 
 #[macro_export]
 macro_rules! child_node {
+    (claim $owner:ident [ $child:literal ] : $type:ty) => {
+        unsafe {
+            $owner.get_node_as::<$type>($child)
+                .expect(concat!("\"", $child, "\" ", stringify!($type), " Child Node"))
+        }.claim()
+    };
+    ($owner:ident [ $child:literal ] ) => {
+        $owner.get_node($child)
+            .expect(concat!("\"", $child, "\" Child Node"))
+    };
     ($var:ident: $type:ty = $owner:ident [ $child:literal ] ) => {
         let $var = unsafe {
             $owner.get_node_as::<$type>($child)

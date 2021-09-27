@@ -22,8 +22,7 @@ pub(crate) trait HasEffect {
 
     #[inline]
     fn play_effect_root(&self, owner: &Node2D) {
-        let scene = self.effect_scene();
-        let scene = assume_safe!(scene);
+        let scene = assume_safe!(self.effect_scene());
 
         assume_safe! {
             let instance: Node2D = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED),

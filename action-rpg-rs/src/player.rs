@@ -105,13 +105,12 @@ impl Player {
     fn _ready(&mut self, owner: &KinematicBody2D) {
         child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
         get_parameter! { animation_state: AnimationPlayback = animation_tree[@"playback"] };
-        child_node! { sword: Area2D = owner["HitboxPivot/SwordHitbox"] }
 
         animation_tree.set_active(true);
 
-        self.sword = Some(sword.claim());
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
+        self.sword = Some(child_node!(claim owner["HitboxPivot/SwordHitbox"]: Area2D));
     }
 
     #[export]

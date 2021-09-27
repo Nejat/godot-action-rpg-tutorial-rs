@@ -109,17 +109,9 @@ impl Bat {
             self.effect = Some(scene.claim())
         } }
 
-        child_node! { stats = owner["Stats"] }
-
-        self.stats = Some(stats);
-
-        child_node! { player_detection: Area2D = owner["PlayerDetectionZone"] }
-
-        self.player_detection = Some(player_detection.claim());
-
-        child_node! { sprite: AnimatedSprite = owner["AnimatedSprite"] }
-
-        self.sprite = Some(sprite.claim());
+        self.stats = Some(child_node!(owner["Stats"]));
+        self.player_detection = Some(child_node!(claim owner["PlayerDetectionZone"]: Area2D));
+        self.sprite = Some(child_node!(claim owner["AnimatedSprite"]: AnimatedSprite));
     }
 
     #[export]
@@ -169,6 +161,7 @@ impl Bat {
         let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - damage;
 
         set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
+
         self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).to_vector2() * self.knock_back_force;
     }
 
