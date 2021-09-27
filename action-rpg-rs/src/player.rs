@@ -3,10 +3,7 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::child_node;
-use crate::get_parameter;
-use crate::assume_safe;
-use crate::set_parameter;
+use crate::{auto_load, child_node, get_parameter, assume_safe, set_parameter};
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
@@ -38,6 +35,7 @@ pub struct Player {
     #[property]
     roll_speed: f32,
     roll_vector: Vector2,
+    stats: Option<Ref<Node>>,
     state: PlayerState,
     sword: Option<Ref<Area2D>>,
     velocity: Vector2,
@@ -58,6 +56,7 @@ impl Player {
             max_speed: DEFAULT_MAX_SPEED,
             roll_speed: DEFAULT_ROLL_SPEED,
             roll_vector: Vector2::new(0.0, 1.0), // DOWN
+            stats: None,
             state: PlayerState::Move,
             sword: None,
             velocity: Vector2::zero(),
@@ -110,6 +109,7 @@ impl Player {
 
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
+        self.stats = Some(auto_load!(claim "PlayerStats": Node));
         self.sword = Some(child_node!(claim owner["HitboxPivot/SwordHitbox"]: Area2D));
     }
 

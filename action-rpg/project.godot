@@ -14,6 +14,10 @@ config/name="action-rpg-tutorial-rs"
 run/main_scene="res://world.tscn"
 config/icon="res://icon.png"
 
+[autoload]
+
+PlayerStats="*res://Player/PlayerStats.tscn"
+
 [display]
 
 window/size/width=320
