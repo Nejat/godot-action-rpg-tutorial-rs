@@ -10,6 +10,11 @@ use crate::set_parameter;
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
+pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
+pub(crate) const PROPERTY_FRICTION: &str = "friction";
+pub(crate) const PROPERTY_MAX_SPEED: &str = "max_speed";
+pub(crate) const PROPERTY_ROLL_SPEED: &str = "roll_speed";
+
 enum PlayerState {
     Attack,
     Move,
@@ -18,32 +23,76 @@ enum PlayerState {
 
 #[derive(NativeClass)]
 #[inherit(KinematicBody2D)]
+#[register_with(Self::register)]
 pub struct Player {
+    #[property]
+    acceleration: f32,
     // todo: when using Ref<T>, the placeholder values in "fn new" cause the following warning in godot
     // todo: "WARNING: cleanup: ObjectDB instances leaked at exit"
     animation_state: Option<Ref<AnimationPlayback>>,
     animation_tree: Option<Ref<AnimationTree>>,
+    #[property]
+    friction: f32,
+    #[property]
+    max_speed: f32,
+    #[property]
+    roll_speed: f32,
     roll_vector: Vector2,
     state: PlayerState,
     sword: Option<Ref<Area2D>>,
     velocity: Vector2,
 }
 
-const ACCELERATION: f32 = 500.0;
-const FRICTION: f32 = 500.0;
-const MAX_SPEED: f32 = 80.0;
-const ROLL_SPEED: f32 = 120.0;
+const DEFAULT_ACCELERATION: f32 = 500.0;
+const DEFAULT_FRICTION: f32 = 500.0;
+const DEFAULT_MAX_SPEED: f32 = 80.0;
+const DEFAULT_ROLL_SPEED: f32 = 120.0;
 
 impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
         Player {
+            acceleration: DEFAULT_ACCELERATION,
             animation_state: None,
             animation_tree: None,
+            friction: DEFAULT_FRICTION,
+            max_speed: DEFAULT_MAX_SPEED,
+            roll_speed: DEFAULT_ROLL_SPEED,
             roll_vector: Vector2::new(0.0, 1.0), // DOWN
             state: PlayerState::Move,
             sword: None,
             velocity: Vector2::zero(),
         }
+    }
+
+    //noinspection DuplicatedCode
+    fn register(builder: &ClassBuilder<Self>) {
+        builder
+            .add_property::<f32>(PROPERTY_ACCELERATION)
+            .with_getter(|s: &Self, _| s.acceleration)
+            .with_setter(|s: &mut Self, _, value: f32| s.acceleration = value)
+            .with_default(DEFAULT_ACCELERATION)
+            .done();
+
+        builder
+            .add_property::<f32>(PROPERTY_FRICTION)
+            .with_getter(|s: &Self, _| s.friction)
+            .with_setter(|s: &mut Self, _, value: f32| s.friction = value)
+            .with_default(DEFAULT_FRICTION)
+            .done();
+
+        builder
+            .add_property::<f32>(PROPERTY_MAX_SPEED)
+            .with_getter(|s: &Self, _| s.max_speed)
+            .with_setter(|s: &mut Self, _, value: f32| s.max_speed = value)
+            .with_default(DEFAULT_MAX_SPEED)
+            .done();
+
+        builder
+            .add_property::<f32>(PROPERTY_ROLL_SPEED)
+            .with_getter(|s: &Self, _| s.roll_speed)
+            .with_setter(|s: &mut Self, _, value: f32| s.roll_speed = value)
+            .with_default(DEFAULT_ROLL_SPEED)
+            .done();
     }
 }
 
@@ -123,11 +172,11 @@ impl Player {
 
             assume_safe!(self.animation_state).travel("Run");
 
-            self.velocity = self.velocity.move_towards(input_vector * MAX_SPEED, ACCELERATION * delta);
+            self.velocity = self.velocity.move_towards(input_vector * self.max_speed, self.acceleration * delta);
         } else {
             assume_safe!(self.animation_state).travel("Idle");
 
-            self.velocity = self.velocity.move_towards(Vector2::zero(), FRICTION * delta);
+            self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
         }
 
         self.move_player(owner);
@@ -143,7 +192,7 @@ impl Player {
 
     #[inline]
     fn roll_state(&mut self, owner: &KinematicBody2D) {
-        self.velocity = self.roll_vector * ROLL_SPEED;
+        self.velocity = self.roll_vector * self.roll_speed;
 
         assume_safe!(self.animation_state).travel("Roll");
 
