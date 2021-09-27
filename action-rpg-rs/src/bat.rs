@@ -3,13 +3,9 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::call;
-use crate::child_node;
-use crate::get_parameter;
+use crate::{assume_safe, call, child_node, get_parameter, load_resource, set_parameter};
 use crate::has_effect::HasEffect;
-use crate::load_resource;
 use crate::player_detection::{METHOD_CAN_SEE_PLAYER, METHOD_GET_PLAYER};
-use crate::set_parameter;
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
 
@@ -36,6 +32,7 @@ enum BatState {
 pub struct Bat {
     #[property]
     acceleration: f32,
+    sprite: Option<Ref<AnimatedSprite>>,
     effect: Option<Ref<PackedScene>>,
     #[property]
     friction: f32,
@@ -60,6 +57,7 @@ impl Bat {
     fn new(_owner: &KinematicBody2D) -> Self {
         Bat {
             acceleration: DEFAULT_ACCELERATION,
+            sprite: None,
             effect: None,
             friction: DEFAULT_FRICTION,
             knock_back: Vector2::zero(),
@@ -118,6 +116,10 @@ impl Bat {
         child_node! { player_detection: Area2D = owner["PlayerDetectionZone"] }
 
         self.player_detection = Some(player_detection.claim());
+
+        child_node! { sprite: AnimatedSprite = owner["AnimatedSprite"] }
+
+        self.sprite = Some(sprite.claim());
     }
 
     #[export]
@@ -140,6 +142,8 @@ impl Bat {
                 } else {
                     self.state = BatState::IDLE
                 }
+
+                assume_safe!(self.sprite).set_flip_h(self.velocity.lower_than(Vector2::zero()).x);
             }
             BatState::IDLE => {
                 self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
