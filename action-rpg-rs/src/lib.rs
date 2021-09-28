@@ -11,6 +11,7 @@ mod player_detection;
 mod soft_collision;
 mod stats;
 mod sword;
+mod wander;
 
 mod utils;
 
@@ -21,6 +22,7 @@ fn init(handle: InitHandle) {
     handle.add_class::<stats::Stats>();
     handle.add_class::<sword::Sword>();
     handle.add_class::<soft_collision::SoftCollision>();
+    handle.add_class::<wander::WanderController>();
     handle.add_class::<bat::Bat>();
     handle.add_class::<player::Player>();
     handle.add_class::<effect::Effect>();
