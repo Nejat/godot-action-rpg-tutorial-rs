@@ -18,11 +18,15 @@ pub(crate) const PROPERTY_KNOCK_BACK_FORCE: &str = "knock_back_force";
 pub(crate) const PROPERTY_MAX_SPEED: &str = "max_speed";
 pub(crate) const PROPERTY_PUSH_VECTOR_FORCE: &str = "push_vector_force";
 
+// i choose this ratio of max speed to buffer the bat's approach to it's target
+const WANDER_BUFFER_RATIO: f32 = 0.08; // this value might be frame rate dependent
+
 const DEFAULT_ACCELERATION: f32 = 300.0;
 const DEFAULT_FRICTION: f32 = 200.0;
 const DEFAULT_KNOCK_BACK_FORCE: f32 = 120.0;
 const DEFAULT_MAX_SPEED: f32 = 50.0;
 const DEFAULT_PUSH_VECTOR_FORCE: f32 = 400.0;
+const DEFAULT_WANDER_BUFFER_ZONE: f32 = DEFAULT_MAX_SPEED * WANDER_BUFFER_RATIO;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum BatState {
@@ -54,6 +58,7 @@ pub struct Bat {
     state: BatState,
     stats: Option<Ref<Node>>,
     velocity: Vector2,
+    wander_buffer_zone: f32,
     wander_controller: Option<Ref<Node2D>>,
 }
 
@@ -81,6 +86,7 @@ impl Bat {
             state: BatState::IDLE,
             stats: None,
             velocity: Vector2::zero(),
+            wander_buffer_zone: DEFAULT_WANDER_BUFFER_ZONE,
             wander_controller: None,
         }
     }
@@ -111,7 +117,10 @@ impl Bat {
         builder
             .add_property::<f32>(PROPERTY_MAX_SPEED)
             .with_getter(|s: &Self, _| s.max_speed)
-            .with_setter(|s: &mut Self, _, value: f32| s.max_speed = value)
+            .with_setter(|s: &mut Self, _, value: f32| {
+                s.max_speed = value;
+                s.wander_buffer_zone = s.max_speed * WANDER_BUFFER_RATIO;
+            })
             .with_default(DEFAULT_MAX_SPEED)
             .done();
 
@@ -184,7 +193,7 @@ impl Bat {
                     direction * self.max_speed, self.acceleration * delta
                 );
 
-                if owner.global_position().distance_to(target_position) <= 4.0 {
+                if owner.global_position().distance_to(target_position) <= self.wander_buffer_zone {
                     self.next_state(3.0);
                 }
             }
@@ -195,7 +204,11 @@ impl Bat {
                 * delta * self.push_vector_force;
         }
 
-        assume_safe!(self.sprite).set_flip_h(self.velocity.lower_than(Vector2::zero()).x);
+        // move flip logic here for all movement states
+        // check for stopped bat to keep last direction
+        if self.velocity != Vector2::zero() {
+            assume_safe!(self.sprite).set_flip_h(self.velocity.x < 0.0);
+        }
 
         owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
     }

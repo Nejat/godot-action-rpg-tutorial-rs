@@ -581,12 +581,14 @@ position = Vector2( 224, 32 )
 
 [node name="Bat" parent="Playground" instance=ExtResource( 7 )]
 position = Vector2( 24, 117 )
+max_speed = 30.0
 
 [node name="Bat2" parent="Playground" instance=ExtResource( 7 )]
 position = Vector2( 232, 3 )
 
 [node name="Bat3" parent="Playground" instance=ExtResource( 7 )]
 position = Vector2( 222, 160 )
+max_speed = 70.0
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
