@@ -4,6 +4,7 @@ mod bat;
 mod effect;
 mod grass;
 mod has_effect;
+mod health_ui;
 mod hurt_box;
 mod player;
 mod player_detection;
@@ -13,6 +14,7 @@ mod sword;
 mod utils;
 
 fn init(handle: InitHandle) {
+    handle.add_class::<health_ui::HealthUI>();
     handle.add_class::<player_detection::PlayerDetectionZone>();
     handle.add_class::<hurt_box::HurtBox>();
     handle.add_class::<stats::Stats>();

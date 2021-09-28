@@ -6,6 +6,10 @@ pub(crate) const PROPERTY_MAX_HEALTH: &'static str = "max_health";
 
 const DEFAULT_HEALTH: Health = 1;
 
+const MINIMUM_HEALTH: Health = 0;
+const MINIMUM_MAX_HEALTH: Health = 1;
+
+pub(crate) const SIGNAL_HEALTH_CHANGED: &str = "health_changed";
 pub(crate) const SIGNAL_NO_HEALTH: &str = "no_health";
 
 type Health = i64;
@@ -41,20 +45,31 @@ impl Stats {
             .with_default(DEFAULT_HEALTH)
             .done();
 
+        let health_arg = SignalArgument {
+            name: "health",
+            default: DEFAULT_HEALTH.to_variant(),
+            export_info: ExportInfo::new(VariantType::I64),
+            usage: PropertyUsage::DEFAULT
+        };
+
+        builder.add_signal(Signal { name: SIGNAL_HEALTH_CHANGED, args: &[health_arg] });
         builder.add_signal(Signal { name: SIGNAL_NO_HEALTH, args: &[] });
     }
 }
 
 #[methods]
 impl Stats {
-    fn set_max_health(&mut self, _owner: TRef<Node>, value: Health) {
-        self.max_health = value;
-        self.health = value;
+    fn set_max_health(&mut self, _owner: TRef<Node>, max_health: Health) {
+        self.max_health = Health::max(max_health, MINIMUM_MAX_HEALTH);
+        self.health = self.max_health;
     }
 
-    fn set_health(&mut self, owner: TRef<Node>, value: Health) {
-        self.health = value;
-        if value <= 0 {
+    fn set_health(&mut self, owner: TRef<Node>, health: Health) {
+        self.health = Health::clamp(health, MINIMUM_HEALTH, self.max_health);
+
+        owner.emit_signal(SIGNAL_HEALTH_CHANGED, &[self.health.to_variant()]);
+
+        if health <= 0 {
             owner.emit_signal(SIGNAL_NO_HEALTH, &[]);
         }
     }

@@ -91,13 +91,13 @@ impl HurtBox {
     // so the method does not need to use "set_deferred", signal is already deferred
     #[export]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_ended(&mut self, owner: TRef<Node2D>) {
+    fn _on_HurtBox_invincibility_ended(&mut self, owner: &Node2D) {
         owner.set("monitorable", true);
     }
 
     #[export]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_started(&mut self, owner: TRef<Node2D>) {
+    fn _on_HurtBox_invincibility_started(&mut self, owner: &Node2D) {
         owner.set("monitorable", false);
     }
 

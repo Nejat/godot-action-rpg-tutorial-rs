@@ -54,10 +54,10 @@ pub struct Player {
     hurtbox: Option<Ref<Node2D>>,
     #[property]
     max_speed: f32,
+    player_stats: Option<Ref<Node>>,
     #[property]
     roll_speed: f32,
     roll_vector: Vector2,
-    stats: Option<Ref<Node>>,
     state: PlayerState,
     sword: Option<Ref<Area2D>>,
     velocity: Vector2,
@@ -74,7 +74,7 @@ impl Player {
             max_speed: DEFAULT_MAX_SPEED,
             roll_speed: DEFAULT_ROLL_SPEED,
             roll_vector: Vector2::new(0.0, 1.0), // DOWN
-            stats: None,
+            player_stats: None,
             state: PlayerState::Move,
             sword: None,
             velocity: Vector2::zero(),
@@ -132,13 +132,13 @@ impl Player {
         self.hurtbox = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
         self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
 
-        let stats = auto_load!("PlayerStats": Node);
+        let player_stats = auto_load!("PlayerStats": Node);
 
-        stats
+        player_stats
             .connect(SIGNAL_NO_HEALTH, owner, "_on_Stats_no_health", VariantArray::new_shared(), 1)
             .expect("_on_Stats_no_health to connect to player stats");
 
-        self.stats = Some(stats.claim());
+        self.player_stats = Some(player_stats.claim());
     }
 
     #[export]
@@ -240,11 +240,11 @@ impl Player {
     #[export]
     #[allow(non_snake_case)]
     fn _on_HurtBox_area_entered(&mut self, _owner: &KinematicBody2D, _area: Ref<Area2D>) {
-        let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
+        let health = get_parameter!(self.player_stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
 
-        set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
+        set_parameter!(self.player_stats.unwrap(); PROPERTY_HEALTH = health);
 
-        call!(self.hurtbox; METHOD_START_INVINCIBILITY(Variant::from_f64(0.5)));
+        call!(self.hurtbox; METHOD_START_INVINCIBILITY(0.5.to_variant()));
         call!(self.hurtbox; METHOD_PLAY_HIT_EFFECT);
     }
 
