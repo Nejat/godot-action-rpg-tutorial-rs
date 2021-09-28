@@ -1,5 +1,4 @@
 use gdnative::api::*;
-use gdnative::nativescript::property::Usage;
 use gdnative::prelude::*;
 
 pub(crate) const PROPERTY_DAMAGE: &str = "damage";
@@ -37,7 +36,7 @@ impl Sword {
             .add_property::<Vector2>(PROPERTY_KNOCK_BACK_VECTOR)
             .with_getter(|s: &Self, _| s.knock_back_vector)
             .with_setter(|s: &mut Self, _, value: Vector2| s.knock_back_vector = value)
-            .with_usage(Usage::NOEDITOR)
+            .with_usage(PropertyUsage::NOEDITOR)
             .done();
     }
 }

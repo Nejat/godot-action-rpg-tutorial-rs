@@ -1,5 +1,4 @@
 use gdnative::api::*;
-use gdnative::nativescript::property::Usage;
 use gdnative::prelude::*;
 
 pub(crate) const METHOD_CAN_SEE_PLAYER: &str = "can_see_player";
@@ -27,7 +26,7 @@ impl PlayerDetectionZone {
             .add_property::<Option<Ref<Node>>>(PROPERTY_PLAYER)
             .with_getter(|s: &Self, _| s.player)
             .with_setter(|s: &mut Self, _, value: Option<Ref<Node>>| s.player = value)
-            .with_usage(Usage::NOEDITOR)
+            .with_usage(PropertyUsage::NOEDITOR)
             .done();
     }
 }

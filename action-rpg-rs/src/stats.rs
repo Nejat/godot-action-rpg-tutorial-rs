@@ -44,6 +44,7 @@ impl Stats {
             .with_getter(|s: &Self, _| s.health)
             .with_setter(Self::set_health)
             .with_default(DEFAULT_HEALTH)
+            .with_usage(PropertyUsage::NOEDITOR)
             .done();
 
         let health_arg = SignalArgument {
