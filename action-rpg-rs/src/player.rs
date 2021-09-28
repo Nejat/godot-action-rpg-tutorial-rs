@@ -3,7 +3,8 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{auto_load, child_node, get_parameter, assume_safe, set_parameter};
+use crate::{assume_safe, auto_load, child_node, get_parameter, set_parameter};
+use crate::stats::{PROPERTY_HEALTH, SIGNAL_NO_HEALTH};
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
@@ -11,6 +12,11 @@ pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
 pub(crate) const PROPERTY_FRICTION: &str = "friction";
 pub(crate) const PROPERTY_MAX_SPEED: &str = "max_speed";
 pub(crate) const PROPERTY_ROLL_SPEED: &str = "roll_speed";
+
+const DEFAULT_ACCELERATION: f32 = 500.0;
+const DEFAULT_FRICTION: f32 = 500.0;
+const DEFAULT_MAX_SPEED: f32 = 80.0;
+const DEFAULT_ROLL_SPEED: f32 = 120.0;
 
 enum PlayerState {
     Attack,
@@ -40,11 +46,6 @@ pub struct Player {
     sword: Option<Ref<Area2D>>,
     velocity: Vector2,
 }
-
-const DEFAULT_ACCELERATION: f32 = 500.0;
-const DEFAULT_FRICTION: f32 = 500.0;
-const DEFAULT_MAX_SPEED: f32 = 80.0;
-const DEFAULT_ROLL_SPEED: f32 = 120.0;
 
 impl Player {
     fn new(_owner: &KinematicBody2D) -> Self {
@@ -101,16 +102,25 @@ impl Player {
 #[methods]
 impl Player {
     #[export]
-    fn _ready(&mut self, owner: &KinematicBody2D) {
-        child_node! { animation_tree: AnimationTree = owner["AnimationTree"] }
-        get_parameter! { animation_state: AnimationPlayback = animation_tree[@"playback"] };
+    fn _ready(&mut self, owner: TRef<KinematicBody2D>) {
+        let owner_ref = owner.as_ref();
+
+        child_node! { animation_tree: AnimationTree = owner_ref["AnimationTree"] }
+        get_parameter! { animation_state: AnimationPlayback = animation_tree[@"playback"] }
 
         animation_tree.set_active(true);
 
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
-        self.stats = Some(auto_load!(claim "PlayerStats": Node));
-        self.sword = Some(child_node!(claim owner["HitboxPivot/SwordHitbox"]: Area2D));
+        self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
+
+        let stats = auto_load!("PlayerStats": Node);
+
+        stats
+            .connect(SIGNAL_NO_HEALTH, owner, "_on_Stats_no_health", VariantArray::new_shared(), 1)
+            .expect("_on_Stats_no_health to connect to player stats");
+
+        self.stats = Some(stats.claim());
     }
 
     #[export]
@@ -153,6 +163,7 @@ impl Player {
 
         input_vector.y = (input.get_action_strength("ui_down") -
             input.get_action_strength("ui_up")) as f32;
+
         if input_vector != Vector2::zero() {
             // in the video, the function "normalized" is used, which handles zero condition.
             // godot-rust does not have that function, instead there is a try_normalize.
@@ -162,12 +173,14 @@ impl Player {
 
             self.roll_vector = input_vector;
 
-            set_parameter!{ ?self.sword; "knock_back_vector" = input_vector }
+            set_parameter! { ?self.sword; "knock_back_vector" = input_vector }
 
-            assume_safe!(self.animation_tree).set("parameters/Idle/blend_position", input_vector);
-            assume_safe!(self.animation_tree).set("parameters/Run/blend_position", input_vector);
-            assume_safe!(self.animation_tree).set("parameters/Attack/blend_position", input_vector);
-            assume_safe!(self.animation_tree).set("parameters/Roll/blend_position", input_vector);
+            let animation_tree = assume_safe!(self.animation_tree);
+
+            animation_tree.set("parameters/Idle/blend_position", input_vector);
+            animation_tree.set("parameters/Run/blend_position", input_vector);
+            animation_tree.set("parameters/Attack/blend_position", input_vector);
+            animation_tree.set("parameters/Roll/blend_position", input_vector);
 
             assume_safe!(self.animation_state).travel("Run");
 
@@ -204,5 +217,19 @@ impl Player {
         // documented default value of 0.785398 for "floor_max_angle"
 
         self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+    }
+
+    #[export]
+    #[allow(non_snake_case)]
+    fn _on_HurtBox_area_entered(&mut self, _owner: &KinematicBody2D, _area: Ref<Area2D>) {
+        let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
+
+        set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
+    }
+
+    #[export]
+    #[allow(non_snake_case)]
+    fn _on_Stats_no_health(&self, owner: &KinematicBody2D) {
+        owner.queue_free();
     }
 }
