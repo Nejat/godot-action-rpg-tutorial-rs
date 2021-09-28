@@ -18,7 +18,7 @@ impl SoftCollision {
 impl SoftCollision {
     #[export]
     fn get_push_vector (&self, owner: &Area2D) -> Vector2 {
-        let mut areas = owner.get_overlapping_areas();
+        let areas = owner.get_overlapping_areas();
         let mut push_vector = Vector2::zero();
 
         if !areas.is_empty() {

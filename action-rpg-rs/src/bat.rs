@@ -9,16 +9,19 @@ use crate::hurt_box::METHOD_PLAY_HIT_EFFECT;
 use crate::player_detection::{METHOD_CAN_SEE_PLAYER, METHOD_GET_PLAYER};
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
+use crate::soft_collision::{METHOD_IS_COLLIDING, METHOD_GET_PUSH_VECTOR};
 
 pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
 pub(crate) const PROPERTY_FRICTION: &str = "friction";
 pub(crate) const PROPERTY_KNOCK_BACK_FORCE: &str = "knock_back_force";
 pub(crate) const PROPERTY_MAX_SPEED: &str = "max_speed";
+pub(crate) const PROPERTY_PUSH_VECTOR_FORCE: &str = "push_vector_force";
 
 const DEFAULT_ACCELERATION: f32 = 300.0;
 const DEFAULT_FRICTION: f32 = 200.0;
 const DEFAULT_KNOCK_BACK_FORCE: f32 = 120.0;
 const DEFAULT_MAX_SPEED: f32 = 50.0;
+const DEFAULT_PUSH_VECTOR_FORCE: f32 = 400.0;
 
 #[allow(dead_code)]
 enum BatState {
@@ -33,7 +36,6 @@ enum BatState {
 pub struct Bat {
     #[property]
     acceleration: f32,
-    sprite: Option<Ref<AnimatedSprite>>,
     effect: Option<Ref<PackedScene>>,
     #[property]
     friction: f32,
@@ -44,6 +46,9 @@ pub struct Bat {
     #[property]
     max_speed: f32,
     player_detection: Option<Ref<Area2D>>,
+    push_vector_force: f32,
+    soft_collision: Option<Ref<Area2D>>,
+    sprite: Option<Ref<AnimatedSprite>>,
     state: BatState,
     stats: Option<Ref<Node>>,
     velocity: Vector2,
@@ -59,7 +64,6 @@ impl Bat {
     fn new(_owner: &KinematicBody2D) -> Self {
         Bat {
             acceleration: DEFAULT_ACCELERATION,
-            sprite: None,
             effect: None,
             friction: DEFAULT_FRICTION,
             hurtbox: None,
@@ -67,6 +71,9 @@ impl Bat {
             knock_back_force: DEFAULT_KNOCK_BACK_FORCE,
             max_speed: DEFAULT_MAX_SPEED,
             player_detection: None,
+            push_vector_force: DEFAULT_PUSH_VECTOR_FORCE,
+            soft_collision: None,
+            sprite: None,
             state: BatState::IDLE,
             stats: None,
             velocity: Vector2::zero(),
@@ -102,6 +109,13 @@ impl Bat {
             .with_setter(|s: &mut Self, _, value: f32| s.max_speed = value)
             .with_default(DEFAULT_MAX_SPEED)
             .done();
+
+        builder
+            .add_property::<f32>(PROPERTY_PUSH_VECTOR_FORCE)
+            .with_getter(|s: &Self, _| s.push_vector_force)
+            .with_setter(|s: &mut Self, _, value: f32| s.push_vector_force = value)
+            .with_default(DEFAULT_PUSH_VECTOR_FORCE)
+            .done();
     }
 }
 
@@ -115,8 +129,9 @@ impl Bat {
 
         self.hurtbox = Some(child_node!(claim owner["HurtBox"]: Node2D));
         self.player_detection = Some(child_node!(claim owner["PlayerDetectionZone"]: Area2D));
-        self.stats = Some(child_node!(owner["Stats"]));
+        self.soft_collision = Some(child_node!(claim owner["SoftCollision"]: Area2D));
         self.sprite = Some(child_node!(claim owner["AnimatedSprite"]: AnimatedSprite));
+        self.stats = Some(child_node!(owner["Stats"]));
     }
 
     #[export]
@@ -147,6 +162,10 @@ impl Bat {
                 self.seek_player(owner);
             }
             BatState::WANDER => {}
+        }
+
+        if call!(self.soft_collision; METHOD_IS_COLLIDING).to_bool() {
+            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR).to_vector2() * delta * self.push_vector_force;
         }
 
         owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
