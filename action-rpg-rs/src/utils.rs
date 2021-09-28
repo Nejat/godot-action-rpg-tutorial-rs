@@ -206,16 +206,28 @@ macro_rules! load_resource {
 
 #[macro_export]
 macro_rules! set_parameter {
-    (?$var:expr; $($param:literal = $value:expr),*) => {unsafe {
+    (? $var:expr; $($param:literal = $value:expr),*) => {unsafe {
         let argument = $var.as_ref().unwrap().assume_safe();
         $(
             argument.set($param, $value);
         )*
     }};
-    (?$var:expr; $($param:ident = $value:expr),*) => {unsafe {
+    (? $var:expr; $($param:ident = $value:expr),*) => {unsafe {
         let argument = $var.as_ref().unwrap().assume_safe();
         $(
             argument.set($param, $value);
+        )*
+    }};
+    (? $var:expr; @ $($param:literal = $value:expr),*) => {unsafe {
+        let argument = $var.as_ref().unwrap().assume_safe();
+        $(
+            argument.set(concat!("parameters/", $param), $value);
+        )*
+    }};
+    (? $var:expr; @ $($param:ident = $value:expr),*) => {unsafe {
+        let argument = $var.as_ref().unwrap().assume_safe();
+        $(
+            argument.set(concat!("parameters/", $param), $value);
         )*
     }};
     ($var:expr; $($param:literal = $value:expr),*) => {unsafe {

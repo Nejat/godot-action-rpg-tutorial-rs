@@ -163,9 +163,9 @@ impl Bat {
     #[allow(non_snake_case)]
     fn _on_HurtBox_area_entered(&mut self, _owner: &KinematicBody2D, area: Ref<Area2D>) {
         let damage = get_parameter!(area[PROPERTY_DAMAGE]).to_i64();
-        let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - damage;
+        let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64();
 
-        set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
+        set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health - damage);
 
         self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).to_vector2() * self.knock_back_force;
 
