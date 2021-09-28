@@ -7,9 +7,10 @@ use crate::{assume_safe, call, child_node, get_parameter, load_resource, set_par
 use crate::has_effect::HasEffect;
 use crate::hurt_box::METHOD_PLAY_HIT_EFFECT;
 use crate::player_detection::{METHOD_CAN_SEE_PLAYER, METHOD_GET_PLAYER};
+use crate::soft_collision::{METHOD_GET_PUSH_VECTOR, METHOD_IS_COLLIDING};
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
-use crate::soft_collision::{METHOD_IS_COLLIDING, METHOD_GET_PUSH_VECTOR};
+use crate::wander::{METHOD_IS_TIMER_COMPLETE, METHOD_START_TIMER, PROPERTY_TARGET_POSITION};
 
 pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
 pub(crate) const PROPERTY_FRICTION: &str = "friction";
@@ -23,7 +24,7 @@ const DEFAULT_KNOCK_BACK_FORCE: f32 = 120.0;
 const DEFAULT_MAX_SPEED: f32 = 50.0;
 const DEFAULT_PUSH_VECTOR_FORCE: f32 = 400.0;
 
-#[allow(dead_code)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum BatState {
     CHASE,
     IDLE,
@@ -47,11 +48,13 @@ pub struct Bat {
     max_speed: f32,
     player_detection: Option<Ref<Area2D>>,
     push_vector_force: f32,
+    rand: Ref<RandomNumberGenerator, Unique>,
     soft_collision: Option<Ref<Area2D>>,
     sprite: Option<Ref<AnimatedSprite>>,
     state: BatState,
     stats: Option<Ref<Node>>,
     velocity: Vector2,
+    wander_controller: Option<Ref<Node2D>>,
 }
 
 impl HasEffect for Bat {
@@ -72,11 +75,13 @@ impl Bat {
             max_speed: DEFAULT_MAX_SPEED,
             player_detection: None,
             push_vector_force: DEFAULT_PUSH_VECTOR_FORCE,
+            rand: RandomNumberGenerator::new(),
             soft_collision: None,
             sprite: None,
             state: BatState::IDLE,
             stats: None,
             velocity: Vector2::zero(),
+            wander_controller: None,
         }
     }
 
@@ -132,6 +137,9 @@ impl Bat {
         self.soft_collision = Some(child_node!(claim owner["SoftCollision"]: Area2D));
         self.sprite = Some(child_node!(claim owner["AnimatedSprite"]: AnimatedSprite));
         self.stats = Some(child_node!(owner["Stats"]));
+        self.wander_controller = Some(child_node!(claim owner["WanderController"]: Node2D));
+
+        self.state = self.pick_random_state();
     }
 
     #[export]
@@ -146,35 +154,87 @@ impl Bat {
                 let player = call!(self.player_detection; METHOD_GET_PLAYER: KinematicBody2D);
 
                 if let Some(player) = player {
-                    let mut direction = unsafe { player.assume_safe().global_position() } - owner.global_position();
-                    if direction != Vector2::zero() {
-                        direction = direction.normalize();
-                    }
-                    self.velocity = self.velocity.move_towards(direction * self.max_speed, self.acceleration * delta);
+                    let direction = owner.global_position()
+                        .direction_to(unsafe { player.assume_safe() }.global_position());
+
+                    self.velocity = self.velocity.move_towards(
+                        direction * self.max_speed, self.acceleration * delta
+                    );
                 } else {
                     self.state = BatState::IDLE
                 }
-
-                assume_safe!(self.sprite).set_flip_h(self.velocity.lower_than(Vector2::zero()).x);
             }
             BatState::IDLE => {
-                self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
                 self.seek_player(owner);
+                self.next_state_on_finish(3.0);
+
+                self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
             }
-            BatState::WANDER => {}
+            BatState::WANDER => {
+                self.seek_player(owner);
+                self.next_state_on_finish(3.0);
+
+                let target_position = get_parameter!(
+                    self.wander_controller.unwrap(); PROPERTY_TARGET_POSITION
+                ).to_vector2();
+
+                let direction = owner.global_position().direction_to(target_position);
+
+                self.velocity = self.velocity.move_towards(
+                    direction * self.max_speed, self.acceleration * delta
+                );
+
+                if owner.global_position().distance_to(target_position) <= 4.0 {
+                    self.next_state(3.0);
+                }
+            }
         }
 
         if call!(self.soft_collision; METHOD_IS_COLLIDING).to_bool() {
-            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR).to_vector2() * delta * self.push_vector_force;
+            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR).to_vector2()
+                * delta * self.push_vector_force;
         }
+
+        assume_safe!(self.sprite).set_flip_h(self.velocity.lower_than(Vector2::zero()).x);
 
         owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
     }
 
+    #[inline]
+    fn next_state(&mut self, max_secs: f64) {
+        self.state = self.pick_random_state();
+
+        call!(
+            self.wander_controller;
+            METHOD_START_TIMER(self.rand.randf_range(1.0, max_secs).to_variant())
+        );
+    }
+
+    #[inline]
+    fn next_state_on_finish(&mut self, max_secs: f64) {
+        let timer_complete = call!(self.wander_controller; METHOD_IS_TIMER_COMPLETE).to_bool();
+
+        if timer_complete {
+            self.next_state(max_secs);
+        }
+    }
+
+    #[inline]
     fn seek_player(&mut self, _owner: &KinematicBody2D) {
         let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER).to_bool();
         if can_see_player {
             self.state = BatState::CHASE
+        }
+    }
+
+    // this did not need the overhead of lists and list manipulation,
+    // so this is my simplified solution
+    #[inline]
+    fn pick_random_state(&mut self) -> BatState {
+        if self.rand.randi_range(1, 2) == 1 {
+            BatState::IDLE
+        } else {
+            BatState::WANDER
         }
     }
 
@@ -186,7 +246,8 @@ impl Bat {
 
         set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health - damage);
 
-        self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).to_vector2() * self.knock_back_force;
+        self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).to_vector2()
+            * self.knock_back_force;
 
         call!(self.hurtbox; METHOD_PLAY_HIT_EFFECT);
     }

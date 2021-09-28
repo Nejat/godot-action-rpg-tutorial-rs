@@ -580,13 +580,13 @@ position = Vector2( 112, 152 )
 position = Vector2( 224, 32 )
 
 [node name="Bat" parent="Playground" instance=ExtResource( 7 )]
-position = Vector2( 32, 96 )
+position = Vector2( 24, 117 )
 
 [node name="Bat2" parent="Playground" instance=ExtResource( 7 )]
-position = Vector2( 216, 24 )
+position = Vector2( 232, 3 )
 
 [node name="Bat3" parent="Playground" instance=ExtResource( 7 )]
-position = Vector2( 208, 152 )
+position = Vector2( 222, 160 )
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
