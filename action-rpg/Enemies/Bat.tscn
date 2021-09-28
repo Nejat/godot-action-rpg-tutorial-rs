@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=2]
+[gd_scene load_steps=20 format=2]
 
 [ext_resource path="res://Enemies/Bat.png" type="Texture" id=1]
 [ext_resource path="res://Shadows/SmallShadow.png" type="Texture" id=2]
@@ -7,6 +7,7 @@
 [ext_resource path="res://Stats/Stats.tscn" type="PackedScene" id=5]
 [ext_resource path="res://Enemies/PlayerDetectionZone.tscn" type="PackedScene" id=6]
 [ext_resource path="res://Colliders/HitBox.tscn" type="PackedScene" id=7]
+[ext_resource path="res://Colliders/SoftCollision.tscn" type="PackedScene" id=8]
 
 [sub_resource type="AtlasTexture" id=1]
 atlas = ExtResource( 1 )
@@ -49,6 +50,9 @@ radius = 60.0
 [sub_resource type="CircleShape2D" id=10]
 radius = 3.16228
 
+[sub_resource type="CircleShape2D" id=11]
+radius = 3.0
+
 [node name="Bat" type="KinematicBody2D"]
 collision_layer = 16
 script = ExtResource( 4 )
@@ -56,7 +60,7 @@ script = ExtResource( 4 )
 [node name="AnimatedSprite" type="AnimatedSprite" parent="."]
 frames = SubResource( 6 )
 animation = "fly"
-frame = 2
+frame = 4
 playing = true
 offset = Vector2( 0, -12 )
 
@@ -71,6 +75,7 @@ shape = SubResource( 7 )
 collision_layer = 8
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
+visible = false
 position = Vector2( 0, -13 )
 shape = SubResource( 8 )
 
@@ -80,6 +85,7 @@ max_health = 2
 [node name="PlayerDetectionZone" parent="." instance=ExtResource( 6 )]
 
 [node name="CollisionShape2D" parent="PlayerDetectionZone" index="0"]
+visible = false
 modulate = Color( 1, 1, 1, 0.196078 )
 shape = SubResource( 9 )
 
@@ -87,8 +93,15 @@ shape = SubResource( 9 )
 collision_mask = 4
 
 [node name="CollisionShape2D" parent="HitBox" index="0"]
+visible = false
 position = Vector2( 0, -15 )
 shape = SubResource( 10 )
+
+[node name="SoftCollision" parent="." instance=ExtResource( 8 )]
+
+[node name="CollisionShape2D" parent="SoftCollision" index="0"]
+visible = false
+shape = SubResource( 11 )
 
 [connection signal="area_entered" from="HurtBox" to="." method="_on_HurtBox_area_entered"]
 [connection signal="no_health" from="Stats" to="." method="_on_Stats_no_health" flags=3]
@@ -96,3 +109,4 @@ shape = SubResource( 10 )
 [editable path="HurtBox"]
 [editable path="PlayerDetectionZone"]
 [editable path="HitBox"]
+[editable path="SoftCollision"]

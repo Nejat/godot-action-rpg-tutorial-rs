@@ -1,4 +1,23 @@
 #[macro_export]
+macro_rules! array_item {
+    ($ary:ident [ $index:literal ] : $type:ty) => {
+        unsafe {
+            $ary.get_ref($index)
+                .try_to_object::<$type>()
+                .expect(concat!(stringify!($type), " at ", stringify!($ary), "[", stringify!($index), "]"))
+                .assume_safe()
+        }
+    };
+    ($ary:ident [ $index:ident ] : $type:ty) => {
+        unsafe {
+            $ary.get_ref($index)
+                .try_to_object::<$type>()
+                .expect(concat!(stringify!($type), " at ", stringify!($ary), "[", stringify!($index), "]"))
+                .assume_safe()
+        }
+    };
+}
+#[macro_export]
 macro_rules! assume_safe {
     ($var:expr) => {
         unsafe { $var.as_ref().unwrap().assume_safe() }
