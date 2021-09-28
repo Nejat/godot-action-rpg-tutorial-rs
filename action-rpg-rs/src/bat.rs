@@ -166,9 +166,7 @@ impl Bat {
                     let direction = owner.global_position()
                         .direction_to(unsafe { player.assume_safe() }.global_position());
 
-                    self.velocity = self.velocity.move_towards(
-                        direction * self.max_speed, self.acceleration * delta
-                    );
+                    self.accelerate_towards(direction, delta);
                 } else {
                     self.state = BatState::IDLE
                 }
@@ -189,9 +187,7 @@ impl Bat {
 
                 let direction = owner.global_position().direction_to(target_position);
 
-                self.velocity = self.velocity.move_towards(
-                    direction * self.max_speed, self.acceleration * delta
-                );
+                self.accelerate_towards(direction, delta);
 
                 if owner.global_position().distance_to(target_position) <= self.wander_buffer_zone {
                     self.next_state(3.0);
@@ -211,6 +207,14 @@ impl Bat {
         }
 
         owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+    }
+
+    #[inline]
+    fn accelerate_towards(&mut self, direction: Vector2, delta: f32) {
+        self.velocity = self.velocity.move_towards(
+            direction * self.max_speed,
+            self.acceleration * delta
+        );
     }
 
     #[inline]
