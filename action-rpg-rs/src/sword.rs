@@ -1,6 +1,6 @@
 use gdnative::api::*;
-use gdnative::prelude::*;
 use gdnative::nativescript::property::Usage;
+use gdnative::prelude::*;
 
 pub(crate) const PROPERTY_DAMAGE: &str = "damage";
 pub(crate) const PROPERTY_KNOCK_BACK_VECTOR: &str = "knock_back_vector";

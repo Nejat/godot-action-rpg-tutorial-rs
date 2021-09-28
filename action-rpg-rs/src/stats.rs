@@ -22,7 +22,7 @@ impl Stats {
     fn new(_owner: &Node) -> Self {
         Stats {
             health: Health::default(),
-            max_health: Health::default()
+            max_health: Health::default(),
         }
     }
 
@@ -41,7 +41,7 @@ impl Stats {
             .with_default(DEFAULT_HEALTH)
             .done();
 
-        builder.add_signal( Signal { name: SIGNAL_NO_HEALTH, args: &[] } );
+        builder.add_signal(Signal { name: SIGNAL_NO_HEALTH, args: &[] });
     }
 }
 

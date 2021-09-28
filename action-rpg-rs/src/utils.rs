@@ -58,22 +58,22 @@ macro_rules! call {
             $src.as_ref().unwrap().assume_safe().call($method, &[]).try_to_object::<$type>()
         }
     };
-    ($src:expr; $method:literal [ $($arg:expr),* ]) => {
+    ($src:expr; $method:literal ( $($arg:expr),* )) => {
         unsafe {
             $src.as_ref().unwrap().assume_safe().call($method, &[$($arg),*])
         }
     };
-    ($src:expr; $method:literal [ $($arg:expr),* ] : $type:ty) => {
+    ($src:expr; $method:literal ( $($arg:expr),* ) : $type:ty) => {
         unsafe {
             $src.as_ref().unwrap().assume_safe().call($method, &[$($arg),*]).try_to_object::<$type>()
         }
     };
-    ($src:expr; $method:ident [ $($arg:expr),* ]) => {
+    ($src:expr; $method:ident ( $($arg:expr),* )) => {
         unsafe {
             $src.as_ref().unwrap().assume_safe().call($method, &[$($arg),*])
         }
     };
-    ($src:expr; $method:ident [ $($arg:expr),* ] : $type:ty) => {
+    ($src:expr; $method:ident ( $($arg:expr),* ) : $type:ty) => {
         unsafe {
             $src.as_ref().unwrap().assume_safe().call($method, &[$($arg),*]).try_to_object::<$type>()
         }

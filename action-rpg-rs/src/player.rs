@@ -3,7 +3,8 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{assume_safe, auto_load, blend_position, child_node, get_parameter, set_parameter};
+use crate::{assume_safe, auto_load, blend_position, call, child_node, get_parameter, set_parameter};
+use crate::hurt_box::{METHOD_PLAY_HIT_EFFECT, METHOD_START_INVINCIBILITY};
 use crate::stats::{PROPERTY_HEALTH, SIGNAL_NO_HEALTH};
 use crate::sword::PROPERTY_KNOCK_BACK_VECTOR;
 
@@ -50,6 +51,7 @@ pub struct Player {
     animation_tree: Option<Ref<AnimationTree>>,
     #[property]
     friction: f32,
+    hurtbox: Option<Ref<Node2D>>,
     #[property]
     max_speed: f32,
     #[property]
@@ -68,6 +70,7 @@ impl Player {
             animation_state: None,
             animation_tree: None,
             friction: DEFAULT_FRICTION,
+            hurtbox: None,
             max_speed: DEFAULT_MAX_SPEED,
             roll_speed: DEFAULT_ROLL_SPEED,
             roll_vector: Vector2::new(0.0, 1.0), // DOWN
@@ -126,6 +129,7 @@ impl Player {
 
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
+        self.hurtbox = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
         self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
 
         let stats = auto_load!("PlayerStats": Node);
@@ -239,6 +243,9 @@ impl Player {
         let health = get_parameter!(self.stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
 
         set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
+
+        call!(self.hurtbox; METHOD_START_INVINCIBILITY(Variant::from_f64(0.5)));
+        call!(self.hurtbox; METHOD_PLAY_HIT_EFFECT);
     }
 
     #[export]

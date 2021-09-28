@@ -5,6 +5,7 @@ use gdnative::prelude::*;
 
 use crate::{assume_safe, call, child_node, get_parameter, load_resource, set_parameter};
 use crate::has_effect::HasEffect;
+use crate::hurt_box::METHOD_PLAY_HIT_EFFECT;
 use crate::player_detection::{METHOD_CAN_SEE_PLAYER, METHOD_GET_PLAYER};
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
@@ -36,6 +37,7 @@ pub struct Bat {
     effect: Option<Ref<PackedScene>>,
     #[property]
     friction: f32,
+    hurtbox: Option<Ref<Node2D>>,
     knock_back: Vector2,
     #[property]
     knock_back_force: f32,
@@ -60,6 +62,7 @@ impl Bat {
             sprite: None,
             effect: None,
             friction: DEFAULT_FRICTION,
+            hurtbox: None,
             knock_back: Vector2::zero(),
             knock_back_force: DEFAULT_KNOCK_BACK_FORCE,
             max_speed: DEFAULT_MAX_SPEED,
@@ -70,6 +73,7 @@ impl Bat {
         }
     }
 
+    //noinspection DuplicatedCode
     fn register(builder: &ClassBuilder<Self>) {
         builder
             .add_property::<f32>(PROPERTY_ACCELERATION)
@@ -109,8 +113,9 @@ impl Bat {
             self.effect = Some(scene.claim())
         } }
 
-        self.stats = Some(child_node!(owner["Stats"]));
+        self.hurtbox = Some(child_node!(claim owner["HurtBox"]: Node2D));
         self.player_detection = Some(child_node!(claim owner["PlayerDetectionZone"]: Area2D));
+        self.stats = Some(child_node!(owner["Stats"]));
         self.sprite = Some(child_node!(claim owner["AnimatedSprite"]: AnimatedSprite));
     }
 
@@ -163,6 +168,8 @@ impl Bat {
         set_parameter!(self.stats.unwrap(); PROPERTY_HEALTH = health);
 
         self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).to_vector2() * self.knock_back_force;
+
+        call!(self.hurtbox; METHOD_PLAY_HIT_EFFECT);
     }
 
     // when connecting signal in the godot editor, click the "advanced" switch
