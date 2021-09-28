@@ -30,6 +30,13 @@ macro_rules! auto_load {
 }
 
 #[macro_export]
+macro_rules! blend_position {
+    ($param:literal) => {
+        concat!("parameters/", $param, "/blend_position")
+    };
+}
+
+#[macro_export]
 macro_rules! call {
     ($src:expr; $method:literal) => {
         unsafe {

@@ -3,8 +3,9 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{assume_safe, auto_load, child_node, get_parameter, set_parameter};
+use crate::{assume_safe, auto_load, blend_position, child_node, get_parameter, set_parameter};
 use crate::stats::{PROPERTY_HEALTH, SIGNAL_NO_HEALTH};
+use crate::sword::PROPERTY_KNOCK_BACK_VECTOR;
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
@@ -18,6 +19,19 @@ const DEFAULT_FRICTION: f32 = 500.0;
 const DEFAULT_MAX_SPEED: f32 = 80.0;
 const DEFAULT_ROLL_SPEED: f32 = 120.0;
 
+const INPUT_ATTACK: &str = "ui_attack";
+const INPUT_DOWN: &str = "ui_down";
+const INPUT_LEFT: &str = "ui_left";
+const INPUT_RIGHT: &str = "ui_right";
+const INPUT_ROLL: &str = "ui_roll";
+const INPUT_UP: &str = "ui_up";
+
+const TRAVEL_ATTACK: &str = "Attack";
+const TRAVEL_IDLE: &str = "Idle";
+const TRAVEL_ROLL: &str = "Roll";
+const TRAVEL_RUN: &str = "Run";
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum PlayerState {
     Attack,
     Move,
@@ -150,7 +164,7 @@ impl Player {
     fn attack_state(&mut self, _owner: &KinematicBody2D) {
         self.velocity = Vector2::zero();
 
-        assume_safe!(self.animation_state).travel("Attack");
+        assume_safe!(self.animation_state).travel(TRAVEL_ATTACK);
     }
 
     #[inline]
@@ -158,11 +172,11 @@ impl Player {
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::zero();
 
-        input_vector.x = (input.get_action_strength("ui_right") -
-            input.get_action_strength("ui_left")) as f32;
+        input_vector.x = (input.get_action_strength(INPUT_RIGHT) -
+            input.get_action_strength(INPUT_LEFT)) as f32;
 
-        input_vector.y = (input.get_action_strength("ui_down") -
-            input.get_action_strength("ui_up")) as f32;
+        input_vector.y = (input.get_action_strength(INPUT_DOWN) -
+            input.get_action_strength(INPUT_UP)) as f32;
 
         if input_vector != Vector2::zero() {
             // in the video, the function "normalized" is used, which handles zero condition.
@@ -173,31 +187,31 @@ impl Player {
 
             self.roll_vector = input_vector;
 
-            set_parameter! { ?self.sword; "knock_back_vector" = input_vector }
+            set_parameter! { ?self.sword; PROPERTY_KNOCK_BACK_VECTOR = input_vector }
 
             let animation_tree = assume_safe!(self.animation_tree);
 
-            animation_tree.set("parameters/Idle/blend_position", input_vector);
-            animation_tree.set("parameters/Run/blend_position", input_vector);
-            animation_tree.set("parameters/Attack/blend_position", input_vector);
-            animation_tree.set("parameters/Roll/blend_position", input_vector);
+            animation_tree.set(blend_position!("Idle"), input_vector);
+            animation_tree.set(blend_position!("Run"), input_vector);
+            animation_tree.set(blend_position!("Attack"), input_vector);
+            animation_tree.set(blend_position!("Roll"), input_vector);
 
-            assume_safe!(self.animation_state).travel("Run");
+            assume_safe!(self.animation_state).travel(TRAVEL_RUN);
 
             self.velocity = self.velocity.move_towards(input_vector * self.max_speed, self.acceleration * delta);
         } else {
-            assume_safe!(self.animation_state).travel("Idle");
+            assume_safe!(self.animation_state).travel(TRAVEL_IDLE);
 
             self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
         }
 
         self.move_player(owner);
 
-        if input.is_action_just_pressed("ui_roll") {
+        if input.is_action_just_pressed(INPUT_ROLL) {
             self.state = PlayerState::Roll
         }
 
-        if input.is_action_just_pressed("ui_attack") {
+        if input.is_action_just_pressed(INPUT_ATTACK) {
             self.state = PlayerState::Attack
         }
     }
@@ -206,7 +220,7 @@ impl Player {
     fn roll_state(&mut self, owner: &KinematicBody2D) {
         self.velocity = self.roll_vector * self.roll_speed;
 
-        assume_safe!(self.animation_state).travel("Roll");
+        assume_safe!(self.animation_state).travel(TRAVEL_ROLL);
 
         self.move_player(owner);
     }
