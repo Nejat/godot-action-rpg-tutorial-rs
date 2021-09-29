@@ -20,6 +20,7 @@ pub(crate) const SIGNAL_INVINCIBILITY_STARTED: &str = "invincibility_started";
 #[inherit(Node2D)]
 #[register_with(Self::register)]
 pub struct HurtBox {
+    collision_shape: Option<Ref<CollisionShape2D>>,
     effect: Option<Ref<PackedScene>>,
     invincible: bool,
     timer: Option<Ref<Timer>>,
@@ -34,6 +35,7 @@ impl HasEffect for HurtBox {
 impl HurtBox {
     fn new(_owner: &Node2D) -> Self {
         HurtBox {
+            collision_shape: None,
             effect: None,
             invincible: DEFAULT_INVINCIBLE,
             timer: None,
@@ -72,6 +74,7 @@ impl HurtBox {
             self.effect = Some(scene.claim())
         } }
 
+        self.collision_shape = Some(child_node!(claim owner["CollisionShape2D"]: CollisionShape2D));
         self.timer = Some(child_node!(claim owner["Timer"]: Timer));
     }
 
@@ -87,17 +90,18 @@ impl HurtBox {
         assume_safe!(self.timer).start(duration);
     }
 
-    // rust required these two signals to be connected "deferred" in godot,
-    // so the method does not need to use "set_deferred", signal is already deferred
+    // rust required these two signals to be connected "deferred" in godot
     #[export]
     #[allow(non_snake_case)]
     fn _on_HurtBox_invincibility_ended(&mut self, owner: &Node2D) {
+        assume_safe!(self.collision_shape).set_disabled(false);
         owner.set("monitorable", true);
     }
 
     #[export]
     #[allow(non_snake_case)]
     fn _on_HurtBox_invincibility_started(&mut self, owner: &Node2D) {
+        assume_safe!(self.collision_shape).set_disabled(true);
         owner.set("monitorable", false);
     }
 

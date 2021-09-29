@@ -97,7 +97,7 @@ impl HealthUI {
     #[export]
     fn set_hearts(&mut self, _owner: TRef<Control>, hearts: Hearts) {
         self.hearts = Hearts::clamp(hearts, MINIMUM_HEARTS, self.max_hearts);
-        self.update_health_ui()
+        self.update_health_ui();
     }
 
     #[export]
@@ -106,6 +106,6 @@ impl HealthUI {
         self.update_max_health_ui();
 
         self.hearts = self.max_hearts;
-        self.update_health_ui()
+        self.update_health_ui();
     }
 }
