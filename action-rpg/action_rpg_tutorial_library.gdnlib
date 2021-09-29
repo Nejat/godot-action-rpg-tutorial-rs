@@ -8,7 +8,9 @@ reloadable=true
 [entry]
 
 Windows.64="res://action-rpg.dll"
+X11.64="res://libaction_rpg_rs.so"
 
 [dependencies]
 
 Windows.64=[  ]
+X11.64=[  ]
