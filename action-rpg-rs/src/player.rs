@@ -252,9 +252,12 @@ impl Player {
     #[export]
     #[allow(non_snake_case)]
     fn _on_HurtBox_area_entered(&mut self, owner: &KinematicBody2D, _area: Ref<Area2D>) {
-        let health = get_parameter!(self.player_stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
+        // enemy hit box does not have damage, the video "fix" causes a bug
+        // let damage = get_parameter!(area[PROPERTY_DAMAGE]).to_i64();
+        let player_stats = self.player_stats.unwrap();
+        let health = get_parameter!(player_stats; PROPERTY_HEALTH).to_i64();
 
-        set_parameter!(self.player_stats.unwrap(); PROPERTY_HEALTH = health);
+        set_parameter!(player_stats; PROPERTY_HEALTH = health - 1);
 
         call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.5.to_variant()));
         call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);
