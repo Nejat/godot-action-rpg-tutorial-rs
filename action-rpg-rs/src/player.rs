@@ -52,6 +52,7 @@ pub struct Player {
     // todo: "WARNING: cleanup: ObjectDB instances leaked at exit"
     animation_state: Option<Ref<AnimationPlayback>>,
     animation_tree: Option<Ref<AnimationTree>>,
+    blink_animation: Option<Ref<AnimationPlayer>>,
     #[property]
     friction: f32,
     hurt_box: Option<Ref<Node2D>>,
@@ -73,6 +74,7 @@ impl Player {
             acceleration: DEFAULT_ACCELERATION,
             animation_state: None,
             animation_tree: None,
+            blink_animation: None,
             friction: DEFAULT_FRICTION,
             hurt_box: None,
             hurt_sound: None,
@@ -134,6 +136,7 @@ impl Player {
 
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
+        self.blink_animation = Some(child_node!(claim owner_ref["BlinkAnimationPlayer"]: AnimationPlayer));
         self.hurt_box = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
         self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
 
@@ -265,6 +268,18 @@ impl Player {
                 scene.add_child(instance, false);
             }
         }
+    }
+
+    #[export]
+    #[allow(non_snake_case)]
+    fn _on_HurtBox_invincibility_ended(&self, _owner: &KinematicBody2D) {
+        assume_safe!(self.blink_animation).play("Stop", -1.0, 1.0, false);
+    }
+
+    #[export]
+    #[allow(non_snake_case)]
+    fn _on_HurtBox_invincibility_started(&self, _owner: &KinematicBody2D) {
+        assume_safe!(self.blink_animation).play("Start", -1.0, 1.0, false);
     }
 
     #[export]
