@@ -3,7 +3,10 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{assume_safe, auto_load, blend_position, call, child_node, get_parameter, set_parameter};
+use crate::{
+    assume_safe, auto_load, blend_position, call,
+    child_node, get_parameter, load_resource, set_parameter,
+};
 use crate::hurt_box::{METHOD_PLAY_HIT_EFFECT, METHOD_START_INVINCIBILITY};
 use crate::stats::{PROPERTY_HEALTH, SIGNAL_NO_HEALTH};
 use crate::sword::PROPERTY_KNOCK_BACK_VECTOR;
@@ -51,7 +54,8 @@ pub struct Player {
     animation_tree: Option<Ref<AnimationTree>>,
     #[property]
     friction: f32,
-    hurtbox: Option<Ref<Node2D>>,
+    hurt_box: Option<Ref<Node2D>>,
+    hurt_sound: Option<Ref<PackedScene>>,
     #[property]
     max_speed: f32,
     player_stats: Option<Ref<Node>>,
@@ -70,7 +74,8 @@ impl Player {
             animation_state: None,
             animation_tree: None,
             friction: DEFAULT_FRICTION,
-            hurtbox: None,
+            hurt_box: None,
+            hurt_sound: None,
             max_speed: DEFAULT_MAX_SPEED,
             roll_speed: DEFAULT_ROLL_SPEED,
             roll_vector: Vector2::new(0.0, 1.0), // DOWN
@@ -129,8 +134,12 @@ impl Player {
 
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
-        self.hurtbox = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
+        self.hurt_box = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
         self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
+
+        load_resource! { scene: PackedScene = "Player/PlayerHurtSound.tscn" {
+            self.hurt_sound = Some(scene.claim())
+        } }
 
         let player_stats = auto_load!("PlayerStats": Node);
 
@@ -239,13 +248,23 @@ impl Player {
 
     #[export]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(&mut self, _owner: &KinematicBody2D, _area: Ref<Area2D>) {
+    fn _on_HurtBox_area_entered(&mut self, owner: &KinematicBody2D, _area: Ref<Area2D>) {
         let health = get_parameter!(self.player_stats.unwrap(); PROPERTY_HEALTH).to_i64() - 1;
 
         set_parameter!(self.player_stats.unwrap(); PROPERTY_HEALTH = health);
 
-        call!(self.hurtbox; METHOD_START_INVINCIBILITY(0.5.to_variant()));
-        call!(self.hurtbox; METHOD_PLAY_HIT_EFFECT);
+        call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.5.to_variant()));
+        call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);
+
+        let scene = assume_safe!(self.hurt_sound);
+
+        assume_safe! {
+            let instance: Node = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED),
+            let root: SceneTree = Node::get_tree(owner),
+            let scene: Node = root.current_scene() => {
+                scene.add_child(instance, false);
+            }
+        }
     }
 
     #[export]
