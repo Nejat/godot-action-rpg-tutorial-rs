@@ -4,4 +4,3 @@
 
 [node name="PlayerStats" instance=ExtResource( 1 )]
 max_health = 5
-health = 4
