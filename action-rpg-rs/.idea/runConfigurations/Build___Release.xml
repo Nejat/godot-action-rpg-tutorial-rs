@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build - Release" type="PowerShellRunType" factoryName="PowerShell" scriptUrl="C:\Users\nejat\repos\godot\action-rpg-tutorial-rs\action-rpg-rs\copy-dll.ps1" scriptParameters="release" workingDirectory="C:\Users\nejat\repos\godot\action-rpg-tutorial-rs\action-rpg-rs" executablePath="C:\Program Files\PowerShell\7\pwsh.exe">
+  <configuration default="false" name="Build - Release" type="PowerShellRunType" factoryName="PowerShell" scriptUrl="$PROJECT_DIR$\build.ps1" scriptParameters="release" workingDirectory="$PROJECT_DIR$" executablePath="C:\Program Files\PowerShell\7\pwsh.exe">
     <envs />
     <method v="2">
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="Build - Release" run_configuration_type="CargoCommandRunConfiguration" />
