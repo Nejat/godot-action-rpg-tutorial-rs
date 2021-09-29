@@ -1,4 +1,4 @@
-[gd_scene load_steps=59 format=2]
+[gd_scene load_steps=60 format=2]
 
 [ext_resource path="res://World/Bush.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Player/Player.tscn" type="PackedScene" id=2]
@@ -9,6 +9,7 @@
 [ext_resource path="res://Enemies/Bat.tscn" type="PackedScene" id=7]
 [ext_resource path="res://UI/HealthUI.tscn" type="PackedScene" id=8]
 [ext_resource path="res://World/Tree.tscn" type="PackedScene" id=9]
+[ext_resource path="res://PlayerCamera.tscn" type="PackedScene" id=10]
 
 [sub_resource type="TileSet" id=1]
 0/name = "DirtTileset.png 0"
@@ -503,13 +504,16 @@ tile_set = SubResource( 49 )
 cell_size = Vector2( 32, 32 )
 collision_mask = 0
 format = 1
-tile_data = PoolIntArray( -1, 0, 0, -65536, 0, 1, -65535, 0, 1, -65534, 0, 1, -65533, 0, 2, -65528, 0, 0, -65527, 0, 1, -65526, 0, 2, 65535, 0, 65536, 0, 0, 65541, 1, 0, 131073, 2, 0, 131073, 3, 0, 131074, 8, 0, 131072, 9, 0, 65544, 10, 0, 131074, 131071, 0, 131072, 65536, 0, 131074, 65545, 0, 131075, 196612, 0, 3, 196617, 0, 0, 196618, 0, 5, 196619, 0, 196610, 262146, 0, 0, 262147, 0, 1, 262148, 0, 131079, 262152, 0, 196608, 262153, 0, 196617, 262154, 0, 131074, 327680, 0, 196608, 327681, 0, 196609, 327682, 0, 196614, 327683, 0, 131073, 327684, 0, 131074, 327689, 0, 131075 )
+tile_data = PoolIntArray( -196612, 0, 4, -196611, 0, 196609, -196610, 0, 196609, -196609, 0, 196609, -262144, 0, 196609, -262143, 0, 196609, -262142, 0, 196609, -262141, 0, 196609, -262140, 0, 196609, -262139, 0, 196609, -262138, 0, 196609, -262137, 0, 196609, -262136, 0, 196609, -262135, 0, 196609, -262134, 0, 196609, -262133, 0, 196609, -262132, 0, 196609, -262131, 0, 196609, -262130, 0, 7, -131076, 0, 65539, -196594, 0, 65539, -65540, 0, 65539, -131058, 0, 65539, -4, 0, 65539, -1, 0, 0, -65536, 0, 1, -65535, 0, 1, -65534, 0, 1, -65533, 0, 2, -65528, 0, 0, -65527, 0, 1, -65526, 0, 2, -65522, 0, 65539, 65532, 0, 65539, 65535, 0, 65536, 0, 0, 65541, 1, 0, 131073, 2, 0, 131073, 3, 0, 131074, 8, 0, 131072, 9, 0, 65544, 10, 0, 131074, 14, 0, 65539, 131068, 0, 65539, 131071, 0, 131072, 65536, 0, 131074, 65545, 0, 131075, 65550, 0, 65539, 196604, 0, 65539, 131086, 0, 65539, 262140, 0, 65539, 196612, 0, 3, 196617, 0, 0, 196618, 0, 5, 196619, 0, 196610, 196622, 0, 65539, 327676, 0, 65539, 262146, 0, 0, 262147, 0, 1, 262148, 0, 131079, 262152, 0, 196608, 262153, 0, 196617, 262154, 0, 131074, 262158, 0, 65539, 393212, 0, 65539, 327680, 0, 196608, 327681, 0, 196609, 327682, 0, 196614, 327683, 0, 131073, 327684, 0, 131074, 327689, 0, 131075, 327694, 0, 65539, 458748, 0, 65539, 393230, 0, 65539, 524284, 0, 65539, 458766, 0, 65539, 589820, 0, 196612, 589821, 0, 196609, 589822, 0, 196609, 589823, 0, 196609, 524288, 0, 196609, 524289, 0, 196609, 524290, 0, 196609, 524291, 0, 196609, 524292, 0, 196609, 524293, 0, 196609, 524294, 0, 196609, 524295, 0, 196609, 524296, 0, 196609, 524297, 0, 196609, 524298, 0, 196609, 524299, 0, 196609, 524300, 0, 196609, 524301, 0, 196609, 524302, 0, 196615 )
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="PlayerCamera" parent="." instance=ExtResource( 10 )]
 position = Vector2( 152, 59 )
-current = true
-process_mode = 0
-smoothing_enabled = true
+
+[node name="TopLeft" parent="PlayerCamera/Limits" index="0"]
+position = Vector2( -96, -96 )
+
+[node name="BottomRight" parent="PlayerCamera/Limits" index="1"]
+position = Vector2( 448, 256 )
 
 [node name="Playground" type="YSort" parent="."]
 
@@ -517,7 +521,7 @@ smoothing_enabled = true
 position = Vector2( 152, 59 )
 
 [node name="RemoteTransform2D" type="RemoteTransform2D" parent="Playground/Player"]
-remote_path = NodePath("../../../Camera2D")
+remote_path = NodePath("../../../PlayerCamera")
 
 [node name="Bushes" type="YSort" parent="Playground"]
 
@@ -597,3 +601,5 @@ margin_left = 2.0
 margin_top = 2.0
 margin_right = 62.0
 margin_bottom = 13.0
+
+[editable path="PlayerCamera"]

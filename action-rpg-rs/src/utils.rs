@@ -111,6 +111,10 @@ macro_rules! child_node {
         $owner.get_node($child)
             .expect(concat!("\"", $child, "\" Child Node"))
     };
+    ($owner:ident [ $child:literal ] : $type:ty) => { unsafe {
+            $owner.get_node_as::<$type>($child)
+            .expect(concat!("\"", $child, "\" ", stringify!($type), " Child Node"))
+    } };
     ($var:ident: $type:ty = $owner:ident [ $child:literal ] ) => {
         let $var = unsafe {
             $owner.get_node_as::<$type>($child)
