@@ -32,3 +32,5 @@ _build debug and copy library so to godot project_
 ```
 
 _* will require ```llvm``` tools, see_ [godot-rust](https://godot-rust.github.io/book/getting-started/setup.html) setup instructions
+
+_* this project is stuck on [Godot 3.4.n](https://godotengine.org/download/archive/#3.4.5) and [GDNative 3.9](https://crates.io/crates/gdnative/0.9.3), there are breaking changes beyond this point_
