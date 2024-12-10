@@ -24,11 +24,27 @@ else
   exit 1
 fi
 
+library="libaction_rpg_rs"
+
+case "$(uname -sr)" in
+   Darwin*)
+     library="$library.dynlib"
+     ;;
+
+   Linux*|Linux*Microsoft*|CYGWIN*|MINGW*|MINGW32*|MSYS*)
+     library="$library.so"
+     ;;
+
+   *)
+     library="$library.so"
+     ;;
+esac
+
 echo
-echo "copying $build libaction_rpg_rs.so to ../action-rpg/libaction_rpg_rs.so"
+echo "copying $build $library to ../action-rpg/$library"
 echo
 
-cp "./target/$build/libaction_rpg_rs.so" ../action-rpg/libaction_rpg_rs.so || { exit 1; }
+cp "./target/$build/$library" ../action-rpg/$library || { exit 1; }
 
 echo "done"
 echo

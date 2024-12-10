@@ -9,8 +9,10 @@ reloadable=true
 
 Windows.64="res://action-rpg.dll"
 X11.64="res://libaction_rpg_rs.so"
+OSX.64="res://libaction_rpg_rs.dynlib"
 
 [dependencies]
 
 Windows.64=[  ]
 X11.64=[  ]
+OSX.64=[  ]
