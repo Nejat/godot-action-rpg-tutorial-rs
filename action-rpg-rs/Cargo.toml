@@ -7,4 +7,4 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-gdnative = "0.9.3"
+gdnative = "0.11.3"

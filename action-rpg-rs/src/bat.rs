@@ -70,14 +70,14 @@ impl HasEffect for Bat {
 }
 
 impl Bat {
-    fn new(_owner: &KinematicBody2D) -> Self {
+    fn new(_owner: TRef<KinematicBody2D>) -> Self {
         Bat {
             acceleration: DEFAULT_ACCELERATION,
             blink_animation: None,
             effect: None,
             friction: DEFAULT_FRICTION,
             hurt_box: None,
-            knock_back: Vector2::zero(),
+            knock_back: Vector2::new(0.0, 0.0),
             knock_back_force: DEFAULT_KNOCK_BACK_FORCE,
             max_speed: DEFAULT_MAX_SPEED,
             player_detection: None,
@@ -87,7 +87,7 @@ impl Bat {
             sprite: None,
             state: BatState::IDLE,
             stats: None,
-            velocity: Vector2::zero(),
+            velocity: Vector2::new(0.0, 0.0),
             wander_buffer_zone: DEFAULT_WANDER_BUFFER_ZONE,
             wander_controller: None,
         }
@@ -96,28 +96,28 @@ impl Bat {
     //noinspection DuplicatedCode
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<f32>(PROPERTY_ACCELERATION)
+            .property::<f32>(PROPERTY_ACCELERATION)
             .with_getter(|s: &Self, _| s.acceleration)
             .with_setter(|s: &mut Self, _, value: f32| s.acceleration = value)
             .with_default(DEFAULT_ACCELERATION)
             .done();
 
         builder
-            .add_property::<f32>(PROPERTY_FRICTION)
+            .property::<f32>(PROPERTY_FRICTION)
             .with_getter(|s: &Self, _| s.friction)
             .with_setter(|s: &mut Self, _, value: f32| s.friction = value)
             .with_default(DEFAULT_FRICTION)
             .done();
 
         builder
-            .add_property::<f32>(PROPERTY_KNOCK_BACK_FORCE)
+            .property::<f32>(PROPERTY_KNOCK_BACK_FORCE)
             .with_getter(|s: &Self, _| s.knock_back_force)
             .with_setter(|s: &mut Self, _, value: f32| s.knock_back_force = value)
             .with_default(DEFAULT_KNOCK_BACK_FORCE)
             .done();
 
         builder
-            .add_property::<f32>(PROPERTY_MAX_SPEED)
+            .property::<f32>(PROPERTY_MAX_SPEED)
             .with_getter(|s: &Self, _| s.max_speed)
             .with_setter(|s: &mut Self, _, value: f32| {
                 s.max_speed = value;
@@ -127,7 +127,7 @@ impl Bat {
             .done();
 
         builder
-            .add_property::<f32>(PROPERTY_PUSH_VECTOR_FORCE)
+            .property::<f32>(PROPERTY_PUSH_VECTOR_FORCE)
             .with_getter(|s: &Self, _| s.push_vector_force)
             .with_setter(|s: &mut Self, _, value: f32| s.push_vector_force = value)
             .with_default(DEFAULT_PUSH_VECTOR_FORCE)
@@ -137,8 +137,8 @@ impl Bat {
 
 #[methods]
 impl Bat {
-    #[export]
-    fn _ready(&mut self, owner: &KinematicBody2D) {
+    #[method]
+    fn _ready(&mut self, #[base] owner: TRef<KinematicBody2D>) {
         load_resource! { scene: PackedScene = "Effects/EnemyDeathEffect.tscn" {
             self.effect = Some(scene.claim())
         } }
@@ -155,12 +155,12 @@ impl Bat {
         self.state = self.pick_random_state();
     }
 
-    #[export]
-    fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
+    #[method]
+    fn _physics_process(&mut self, #[base] owner: TRef<KinematicBody2D>, delta: f32) {
         self.knock_back = owner.move_and_slide(
             self.knock_back
-                .move_towards(Vector2::zero(), self.friction * delta),
-            Vector2::zero(),
+                .move_toward(Vector2::new(0.0, 0.0), self.friction * delta),
+            Vector2::new(0.0, 0.0),
             false,
             4,
             FRAC_PI_4,
@@ -171,7 +171,7 @@ impl Bat {
             BatState::CHASE => {
                 let player = call!(self.player_detection; METHOD_GET_PLAYER: KinematicBody2D);
 
-                if let Some(player) = player {
+                if let Ok(player) = player {
                     let direction = owner
                         .global_position()
                         .direction_to(unsafe { player.assume_safe() }.global_position());
@@ -187,7 +187,7 @@ impl Bat {
 
                 self.velocity = self
                     .velocity
-                    .move_towards(Vector2::zero(), self.friction * delta);
+                    .move_toward(Vector2::new(0.0, 0.0), self.friction * delta);
             }
             BatState::WANDER => {
                 self.seek_player(owner);
@@ -196,7 +196,7 @@ impl Bat {
                 let target_position = get_parameter!(
                     self.wander_controller.unwrap(); PROPERTY_TARGET_POSITION
                 )
-                .to_vector2();
+                .try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0));
 
                 let direction = owner.global_position().direction_to(target_position);
 
@@ -208,26 +208,26 @@ impl Bat {
             }
         }
 
-        if call!(self.soft_collision; METHOD_IS_COLLIDING).to_bool() {
-            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR).to_vector2()
+        if call!(self.soft_collision; METHOD_IS_COLLIDING).try_to::<bool>().unwrap_or(false) {
+            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR).try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0))
                 * delta
                 * self.push_vector_force;
         }
 
         // move flip logic here for all movement states
         // check for stopped bat to keep last direction
-        if self.velocity != Vector2::zero() {
+        if self.velocity != Vector2::new(0.0, 0.0) {
             assume_safe!(self.sprite).set_flip_h(self.velocity.x < 0.0);
         }
 
-        owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+        owner.move_and_slide(self.velocity, Vector2::new(0.0, 0.0), false, 4, FRAC_PI_4, true);
     }
 
     #[inline]
     fn accelerate_towards(&mut self, direction: Vector2, delta: f32) {
         self.velocity = self
             .velocity
-            .move_towards(direction * self.max_speed, self.acceleration * delta);
+            .move_toward(direction * self.max_speed, self.acceleration * delta);
     }
 
     #[inline]
@@ -242,7 +242,7 @@ impl Bat {
 
     #[inline]
     fn next_state_on_finish(&mut self, max_secs: f64) {
-        let timer_complete = call!(self.wander_controller; METHOD_IS_TIMER_COMPLETE).to_bool();
+        let timer_complete = call!(self.wander_controller; METHOD_IS_TIMER_COMPLETE).try_to::<bool>().unwrap_or(false);
 
         if timer_complete {
             self.next_state(max_secs);
@@ -250,8 +250,8 @@ impl Bat {
     }
 
     #[inline]
-    fn seek_player(&mut self, _owner: &KinematicBody2D) {
-        let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER).to_bool();
+    fn seek_player(&mut self, _owner: TRef<'_, KinematicBody2D>) {
+        let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER).try_to::<bool>().unwrap_or(false);
         if can_see_player {
             self.state = BatState::CHASE
         }
@@ -268,41 +268,41 @@ impl Bat {
         }
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(&mut self, _owner: &KinematicBody2D, area: Ref<Area2D>) {
-        let damage = get_parameter!(area[PROPERTY_DAMAGE]).to_i64();
+    fn _on_HurtBox_area_entered(&mut self, #[base] _owner: TRef<KinematicBody2D>, area: Ref<Area2D>) {
+        let damage = get_parameter!(area[PROPERTY_DAMAGE]).try_to::<i64>().unwrap_or(0);
         let stats = self.stats.unwrap();
-        let health = get_parameter!(stats; PROPERTY_HEALTH).to_i64();
+        let health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
 
         set_parameter!(stats; PROPERTY_HEALTH = health - damage);
 
         self.knock_back =
-            get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).to_vector2() * self.knock_back_force;
+            get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0)) * self.knock_back_force;
 
         call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.4.to_variant()));
         call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_ended(&self, _owner: &KinematicBody2D) {
+    fn _on_HurtBox_invincibility_ended(&self, #[base] _owner: TRef<KinematicBody2D>) {
         assume_safe!(self.blink_animation).play("Stop", -1.0, 1.0, false);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_started(&self, _owner: &KinematicBody2D) {
+    fn _on_HurtBox_invincibility_started(&self, #[base] _owner: TRef<KinematicBody2D>) {
         assume_safe!(self.blink_animation).play("Start", -1.0, 1.0, false);
     }
 
     // when connecting signal in the godot editor, click the "advanced" switch
     // and select the "deferred" option, otherwise an exception occurs
     // todo: figure out why this is necessary
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_Stats_no_health(&self, owner: &KinematicBody2D) {
-        self.play_effect_parent(owner);
+    fn _on_Stats_no_health(&self, #[base] owner: TRef<KinematicBody2D>) {
+        self.play_effect_parent(&*owner);
         owner.queue_free();
     }
 }

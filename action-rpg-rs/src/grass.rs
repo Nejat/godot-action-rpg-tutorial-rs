@@ -17,24 +17,24 @@ impl HasEffect for Grass {
 }
 
 impl Grass {
-    fn new(_owner: &Node2D) -> Self {
+    fn new(_owner: TRef<Node2D>) -> Self {
         Grass { effect: None }
     }
 }
 
 #[methods]
 impl Grass {
-    #[export]
-    fn _ready(&mut self, _owner: &Node2D) {
+    #[method]
+    fn _ready(&mut self, #[base] _owner: TRef<Node2D>) {
         load_resource! { scene: PackedScene = "Effects/GrassEffect.tscn" {
             self.effect = Some(scene.claim())
         } }
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(&mut self, owner: &Node2D, _area: Ref<Area2D>) {
-        self.play_effect_parent(owner);
+    fn _on_HurtBox_area_entered(&mut self, #[base] owner: TRef<Node2D>, _area: Ref<Area2D>) {
+        self.play_effect_parent(&*owner);
         owner.queue_free();
     }
 }

@@ -20,20 +20,20 @@ impl Sword {
     fn new(_owner: &Area2D) -> Self {
         Sword {
             damage: 1,
-            knock_back_vector: Vector2::zero(),
+            knock_back_vector: Vector2::new(0.0, 0.0),
         }
     }
 
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<i64>(PROPERTY_DAMAGE)
+            .property::<i64>(PROPERTY_DAMAGE)
             .with_getter(|s: &Self, _| s.damage)
             .with_setter(|s: &mut Self, _, value: i64| s.damage = value)
             .with_default(DEFAULT_DAMAGE)
             .done();
 
         builder
-            .add_property::<Vector2>(PROPERTY_KNOCK_BACK_VECTOR)
+            .property::<Vector2>(PROPERTY_KNOCK_BACK_VECTOR)
             .with_getter(|s: &Self, _| s.knock_back_vector)
             .with_setter(|s: &mut Self, _, value: Vector2| s.knock_back_vector = value)
             .with_usage(PropertyUsage::NOEDITOR)

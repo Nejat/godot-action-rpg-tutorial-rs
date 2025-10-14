@@ -8,23 +8,24 @@ use crate::child_node;
 pub struct PlayerCamera;
 
 impl PlayerCamera {
-    fn new(_owner: &Camera2D) -> Self {
+    fn new(_owner: TRef<Camera2D>) -> Self {
         PlayerCamera
     }
 }
 
 #[methods]
 impl PlayerCamera {
-    #[export]
-    fn _ready(&mut self, owner: &Camera2D) {
-        let top_left = child_node!(owner["Limits/TopLeft"]: Position2D).position();
+    #[method]
+    fn _ready(&mut self, #[base] owner: TRef<Camera2D>) {
+        let owner_ref = owner;
+        let top_left = child_node!(owner_ref["Limits/TopLeft"]: Position2D).position();
 
-        owner.set("limit_top", top_left.y);
-        owner.set("limit_left", top_left.x);
+        owner_ref.set("limit_top", top_left.y);
+        owner_ref.set("limit_left", top_left.x);
 
-        let bottom_right = child_node!(owner["Limits/BottomRight"]: Position2D).position();
+        let bottom_right = child_node!(owner_ref["Limits/BottomRight"]: Position2D).position();
 
-        owner.set("limit_bottom", bottom_right.y);
-        owner.set("limit_right", bottom_right.x);
+        owner_ref.set("limit_bottom", bottom_right.y);
+        owner_ref.set("limit_right", bottom_right.x);
     }
 }

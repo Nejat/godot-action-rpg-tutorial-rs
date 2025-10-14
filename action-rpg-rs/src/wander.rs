@@ -28,11 +28,11 @@ pub struct WanderController {
 }
 
 impl WanderController {
-    fn new(_owner: &Node2D) -> Self {
+    fn new(_owner: TRef<Node2D>) -> Self {
         WanderController {
             rand: RandomNumberGenerator::new(),
-            start_position: Vector2::zero(),
-            target_position: Vector2::zero(),
+            start_position: Vector2::new(0.0, 0.0),
+            target_position: Vector2::new(0.0, 0.0),
             timer: None,
             wander_ranger: DEFAULT_WANDER_RANGE,
         }
@@ -40,14 +40,14 @@ impl WanderController {
 
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<i64>(PROPERTY_WANDER_RANGE)
+            .property::<i64>(PROPERTY_WANDER_RANGE)
             .with_getter(|s: &Self, _| s.wander_ranger)
             .with_setter(|s: &mut Self, _, value| s.wander_ranger = value)
             .with_default(DEFAULT_WANDER_RANGE)
             .done();
 
         builder
-            .add_property::<Vector2>(PROPERTY_TARGET_POSITION)
+            .property::<Vector2>(PROPERTY_TARGET_POSITION)
             .with_getter(|s: &Self, _| s.target_position)
             .with_setter(|s: &mut Self, _, value| s.target_position = value)
             .with_usage(PropertyUsage::NOEDITOR)
@@ -57,10 +57,11 @@ impl WanderController {
 
 #[methods]
 impl WanderController {
-    #[export]
-    fn _ready(&mut self, owner: &Node2D) {
-        self.start_position = owner.global_position();
-        self.timer = Some(child_node!(claim owner["Timer"]: Timer));
+    #[method]
+    fn _ready(&mut self, #[base] owner: TRef<Node2D>) {
+        let owner_ref = owner;
+        self.start_position = owner_ref.global_position();
+        self.timer = Some(child_node!(claim owner_ref["Timer"]: Timer));
 
         // bats seemed to have to the same pattern if they
         // were not interrupted by a chase state, this fixed that
@@ -69,19 +70,19 @@ impl WanderController {
         self.update_target_position();
     }
 
-    #[export]
-    fn is_timer_complete(&self, _owner: &Node2D) -> bool {
-        get_parameter!(self.timer.unwrap(); "time_left").to_f64() == 0.0
+    #[method]
+    fn is_timer_complete(&self, #[base] _owner: TRef<Node2D>) -> bool {
+        get_parameter!(self.timer.unwrap(); "time_left").try_to::<f64>().unwrap_or(0.0) == 0.0
     }
 
-    #[export]
-    fn start_timer(&self, _owner: &Node2D, duration: Duration) {
+    #[method]
+    fn start_timer(&self, #[base] _owner: TRef<Node2D>, duration: Duration) {
         assume_safe!(self.timer).start(duration);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_Timer_timeout(&mut self, _owner: &Node2D) {
+    fn _on_Timer_timeout(&mut self, #[base] _owner: TRef<Node2D>) {
         self.update_target_position()
     }
 

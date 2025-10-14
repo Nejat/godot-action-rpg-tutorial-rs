@@ -33,47 +33,48 @@ impl Stats {
 
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<Health>(PROPERTY_MAX_HEALTH)
+            .property::<Health>(PROPERTY_MAX_HEALTH)
             .with_getter(|s: &Self, _| s.max_health)
             .with_setter(Self::set_max_health)
             .with_default(DEFAULT_HEALTH)
             .done();
 
         builder
-            .add_property::<Health>(PROPERTY_HEALTH)
+            .property::<Health>(PROPERTY_HEALTH)
             .with_getter(|s: &Self, _| s.health)
             .with_setter(Self::set_health)
             .with_default(DEFAULT_HEALTH)
             .with_usage(PropertyUsage::NOEDITOR)
             .done();
 
-        let health_arg = SignalArgument {
-            name: "health",
-            default: DEFAULT_HEALTH.to_variant(),
-            export_info: ExportInfo::new(VariantType::I64),
-            usage: PropertyUsage::DEFAULT,
-        };
+        // TODO: Fix signal definitions for GDNative 0.11.3
+        // let health_arg = SignalArgument {
+        //     name: "health",
+        //     default: DEFAULT_HEALTH.to_variant(),
+        //     export_info: ExportInfo::new(VariantType::I64),
+        //     usage: PropertyUsage::DEFAULT,
+        // };
 
-        builder.add_signal(Signal {
-            name: SIGNAL_HEALTH_CHANGED,
-            args: &[health_arg],
-        });
+        // builder.add_signal(Signal {
+        //     name: SIGNAL_HEALTH_CHANGED,
+        //     args: &[health_arg],
+        // });
 
-        let max_health_arg = SignalArgument {
-            name: "max_health",
-            default: DEFAULT_HEALTH.to_variant(),
-            export_info: ExportInfo::new(VariantType::I64),
-            usage: PropertyUsage::DEFAULT,
-        };
+        // let max_health_arg = SignalArgument {
+        //     name: "max_health",
+        //     default: DEFAULT_HEALTH.to_variant(),
+        //     export_info: ExportInfo::new(VariantType::I64),
+        //     usage: PropertyUsage::DEFAULT,
+        // };
 
-        builder.add_signal(Signal {
-            name: SIGNAL_MAX_HEALTH_CHANGED,
-            args: &[max_health_arg],
-        });
-        builder.add_signal(Signal {
-            name: SIGNAL_NO_HEALTH,
-            args: &[],
-        });
+        // builder.add_signal(Signal {
+        //     name: SIGNAL_MAX_HEALTH_CHANGED,
+        //     args: &[max_health_arg],
+        // });
+        // builder.add_signal(Signal {
+        //     name: SIGNAL_NO_HEALTH,
+        //     args: &[],
+        // });
     }
 }
 

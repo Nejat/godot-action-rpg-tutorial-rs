@@ -6,16 +6,16 @@ use gdnative::prelude::*;
 pub struct PlayerHurtSound;
 
 impl PlayerHurtSound {
-    fn new(_owner: &AudioStreamPlayer) -> Self {
+    fn new(_owner: TRef<AudioStreamPlayer>) -> Self {
         PlayerHurtSound
     }
 }
 
 #[methods]
 impl PlayerHurtSound {
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_PlayerHurtSound_finished(&mut self, owner: &AudioStreamPlayer) {
+    fn _on_PlayerHurtSound_finished(&mut self, #[base] owner: TRef<AudioStreamPlayer>) {
         owner.queue_free();
     }
 }

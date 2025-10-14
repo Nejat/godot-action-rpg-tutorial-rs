@@ -6,15 +6,15 @@ use gdnative::prelude::*;
 pub struct Effect;
 
 impl Effect {
-    fn new(_owner: &AnimatedSprite) -> Self {
+    fn new(_owner: TRef<AnimatedSprite>) -> Self {
         Effect
     }
 }
 
 #[methods]
 impl Effect {
-    #[export]
-    fn _ready(&mut self, owner: TRef<AnimatedSprite>) {
+    #[method]
+    fn _ready(&mut self, #[base] owner: TRef<AnimatedSprite>) {
         owner
             .connect(
                 "animation_finished",
@@ -29,9 +29,9 @@ impl Effect {
         owner.play("Animate", false);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_animation_finished(&mut self, owner: &AnimatedSprite) {
+    fn _on_animation_finished(&mut self, #[base] owner: TRef<AnimatedSprite>) {
         owner.queue_free();
     }
 }

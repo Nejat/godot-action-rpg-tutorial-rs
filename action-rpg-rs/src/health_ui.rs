@@ -31,7 +31,7 @@ pub struct HealthUI {
 }
 
 impl HealthUI {
-    fn new(_owner: &Control) -> Self {
+    fn new(_owner: TRef<Control>) -> Self {
         HealthUI {
             hearts: DEFAULT_MAX_HEARTS,
             hearts_empty: None,
@@ -43,14 +43,14 @@ impl HealthUI {
 
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<Hearts>(PROPERTY_HEARTS)
+            .property::<Hearts>(PROPERTY_HEARTS)
             .with_getter(|s: &Self, _| s.hearts)
             .with_setter(Self::set_hearts)
             .with_default(DEFAULT_MAX_HEARTS)
             .done();
 
         builder
-            .add_property::<Hearts>(PROPERTY_MAX_HEARTS)
+            .property::<Hearts>(PROPERTY_MAX_HEARTS)
             .with_getter(|s: &Self, _| s.max_hearts)
             .with_setter(Self::set_max_hearts)
             .with_default(DEFAULT_MAX_HEARTS)
@@ -76,9 +76,9 @@ impl HealthUI {
 
 #[methods]
 impl HealthUI {
-    #[export]
-    fn _ready(&mut self, owner: TRef<Control>) {
-        let owner_ref = owner.as_ref();
+    #[method]
+    fn _ready(&mut self, #[base] owner: TRef<Control>) {
+        let owner_ref = owner;
 
         self.hearts_empty = Some(child_node!(claim owner_ref["HeartUIEmpty"]: TextureRect));
         self.hearts_full = Some(child_node!(claim owner_ref["HeartUIFull"]: TextureRect));
@@ -105,19 +105,19 @@ impl HealthUI {
             )
             .expect("set_max_hearts to connect to player stats");
 
-        self.set_max_hearts(owner, player_stats.get(PROPERTY_MAX_HEALTH).to_i64());
+        self.set_max_hearts(owner, player_stats.get(PROPERTY_MAX_HEALTH).try_to::<i64>().unwrap_or(0));
 
         self.player_stats = Some(player_stats.claim());
     }
 
-    #[export]
-    fn set_hearts(&mut self, _owner: TRef<Control>, hearts: Hearts) {
+    #[method]
+    fn set_hearts(&mut self, #[base] _owner: TRef<Control>, hearts: Hearts) {
         self.hearts = Hearts::clamp(hearts, MINIMUM_HEARTS, self.max_hearts);
         self.update_health_ui();
     }
 
-    #[export]
-    fn set_max_hearts(&mut self, _owner: TRef<Control>, max_hearts: Hearts) {
+    #[method]
+    fn set_max_hearts(&mut self, #[base] _owner: TRef<Control>, max_hearts: Hearts) {
         self.max_hearts = Hearts::max(max_hearts, MINIMUM_MAX_HEARTS);
         self.update_max_health_ui();
 

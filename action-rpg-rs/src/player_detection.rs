@@ -15,13 +15,13 @@ pub struct PlayerDetectionZone {
 }
 
 impl PlayerDetectionZone {
-    fn new(_owner: &Area2D) -> Self {
+    fn new(_owner: TRef<Area2D>) -> Self {
         PlayerDetectionZone { player: None }
     }
 
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<Option<Ref<Node>>>(PROPERTY_PLAYER)
+            .property::<Option<Ref<Node>>>(PROPERTY_PLAYER)
             .with_getter(|s: &Self, _| s.player)
             .with_setter(|s: &mut Self, _, value: Option<Ref<Node>>| s.player = value)
             .with_usage(PropertyUsage::NOEDITOR)
@@ -31,25 +31,25 @@ impl PlayerDetectionZone {
 
 #[methods]
 impl PlayerDetectionZone {
-    #[export]
-    pub(crate) fn can_see_player(&self, _owner: &Area2D) -> bool {
+    #[method]
+    pub(crate) fn can_see_player(&self, #[base] _owner: TRef<Area2D>) -> bool {
         self.player.is_some()
     }
 
-    #[export]
-    pub(crate) fn get_player(&self, _owner: &Area2D) -> Variant {
+    #[method]
+    pub(crate) fn get_player(&self, #[base] _owner: TRef<Area2D>) -> Variant {
         self.player.to_variant()
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_PlayerDetectionZone_body_entered(&mut self, _owner: &Area2D, body: Ref<Node>) {
+    fn _on_PlayerDetectionZone_body_entered(&mut self, #[base] _owner: TRef<Area2D>, body: Ref<Node>) {
         self.player = Some(body);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_PlayerDetectionZone_body_exited(&mut self, _owner: &Area2D, _body: Ref<Node>) {
+    fn _on_PlayerDetectionZone_body_exited(&mut self, #[base] _owner: TRef<Area2D>, _body: Ref<Node>) {
         self.player = None
     }
 }

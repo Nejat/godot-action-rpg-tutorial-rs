@@ -33,7 +33,7 @@ impl HasEffect for HurtBox {
 }
 
 impl HurtBox {
-    fn new(_owner: &Node2D) -> Self {
+    fn new(_owner: TRef<Node2D>) -> Self {
         HurtBox {
             collision_shape: None,
             effect: None,
@@ -44,24 +44,25 @@ impl HurtBox {
 
     fn register(builder: &ClassBuilder<Self>) {
         builder
-            .add_property::<bool>(PROPERTY_INVINCIBLE)
+            .property::<bool>(PROPERTY_INVINCIBLE)
             .with_getter(|s: &Self, _| s.invincible)
             .with_setter(Self::set_invincible)
             .with_default(DEFAULT_INVINCIBLE)
             .done();
 
-        builder.add_signal(Signal {
-            name: SIGNAL_INVINCIBILITY_ENDED,
-            args: &[],
-        });
+        // TODO: Fix signal definitions for GDNative 0.11.3
+        // builder.add_signal(Signal {
+        //     name: SIGNAL_INVINCIBILITY_ENDED,
+        //     args: &[],
+        // });
 
-        builder.add_signal(Signal {
-            name: SIGNAL_INVINCIBILITY_STARTED,
-            args: &[],
-        });
+        // builder.add_signal(Signal {
+        //     name: SIGNAL_INVINCIBILITY_STARTED,
+        //     args: &[],
+        // });
     }
 
-    fn set_invincible(&mut self, owner: TRef<Node2D>, invincible: bool) {
+    fn set_invincible(&mut self, owner: TRef<'_, Node2D>, invincible: bool) {
         self.invincible = invincible;
 
         if invincible {
@@ -74,46 +75,48 @@ impl HurtBox {
 
 #[methods]
 impl HurtBox {
-    #[export]
-    fn _ready(&mut self, owner: &Node2D) {
+    #[method]
+    fn _ready(&mut self, #[base] owner: TRef<Node2D>) {
+        let owner_ref = owner;
+        
         load_resource! { scene: PackedScene = "Effects/HitEffect.tscn" {
             self.effect = Some(scene.claim())
         } }
 
-        self.collision_shape = Some(child_node!(claim owner["CollisionShape2D"]: CollisionShape2D));
-        self.timer = Some(child_node!(claim owner["Timer"]: Timer));
+        self.collision_shape = Some(child_node!(claim owner_ref["CollisionShape2D"]: CollisionShape2D));
+        self.timer = Some(child_node!(claim owner_ref["Timer"]: Timer));
     }
 
-    #[export]
-    fn play_hit_effect(&mut self, owner: &Node2D) {
-        self.play_effect_root(owner);
+    #[method]
+    fn play_hit_effect(&mut self, #[base] owner: TRef<Node2D>) {
+        self.play_effect_root(&*owner);
     }
 
-    #[export]
-    fn start_invincibility(&mut self, owner: TRef<Node2D>, duration: Duration) {
+    #[method]
+    fn start_invincibility(&mut self, #[base] owner: TRef<Node2D>, duration: Duration) {
         self.set_invincible(owner, true);
 
         assume_safe!(self.timer).start(duration);
     }
 
     // rust required these two signals to be connected "deferred" in godot
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_ended(&mut self, owner: &Node2D) {
+    fn _on_HurtBox_invincibility_ended(&mut self, #[base] owner: TRef<Node2D>) {
         assume_safe!(self.collision_shape).set_disabled(false);
         owner.set("monitorable", true);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_started(&mut self, owner: &Node2D) {
+    fn _on_HurtBox_invincibility_started(&mut self, #[base] owner: TRef<Node2D>) {
         assume_safe!(self.collision_shape).set_disabled(true);
         owner.set("monitorable", false);
     }
 
-    #[export]
+    #[method]
     #[allow(non_snake_case)]
-    fn _on_Timer_timeout(&mut self, owner: TRef<Node2D>) {
+    fn _on_Timer_timeout(&mut self, #[base] owner: TRef<Node2D>) {
         self.set_invincible(owner, false);
     }
 }
