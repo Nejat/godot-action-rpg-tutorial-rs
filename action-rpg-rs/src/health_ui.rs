@@ -88,7 +88,7 @@ impl HealthUI {
         player_stats
             .connect(
                 SIGNAL_HEALTH_CHANGED,
-                owner.clone(),
+                owner,
                 "set_hearts",
                 VariantArray::new_shared(),
                 1,
@@ -98,7 +98,7 @@ impl HealthUI {
         player_stats
             .connect(
                 SIGNAL_MAX_HEALTH_CHANGED,
-                owner.clone(),
+                owner,
                 "set_max_hearts",
                 VariantArray::new_shared(),
                 1,

@@ -30,9 +30,9 @@ const DEFAULT_WANDER_BUFFER_ZONE: f32 = DEFAULT_MAX_SPEED * WANDER_BUFFER_RATIO;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum BatState {
-    CHASE,
-    IDLE,
-    WANDER,
+    Chase,
+    Idle,
+    Wander,
 }
 
 #[derive(NativeClass)]
@@ -85,7 +85,7 @@ impl Bat {
             rand: RandomNumberGenerator::new(),
             soft_collision: None,
             sprite: None,
-            state: BatState::IDLE,
+            state: BatState::Idle,
             stats: None,
             velocity: Vector2::new(0.0, 0.0),
             wander_buffer_zone: DEFAULT_WANDER_BUFFER_ZONE,
@@ -168,7 +168,7 @@ impl Bat {
         );
 
         match self.state {
-            BatState::CHASE => {
+            BatState::Chase => {
                 let player = call!(self.player_detection; METHOD_GET_PLAYER: KinematicBody2D);
 
                 if let Ok(player) = player {
@@ -178,10 +178,10 @@ impl Bat {
 
                     self.accelerate_towards(direction, delta);
                 } else {
-                    self.state = BatState::IDLE
+                    self.state = BatState::Idle
                 }
             }
-            BatState::IDLE => {
+            BatState::Idle => {
                 self.seek_player(owner);
                 self.next_state_on_finish(3.0);
 
@@ -189,7 +189,7 @@ impl Bat {
                     .velocity
                     .move_toward(Vector2::new(0.0, 0.0), self.friction * delta);
             }
-            BatState::WANDER => {
+            BatState::Wander => {
                 self.seek_player(owner);
                 self.next_state_on_finish(3.0);
 
@@ -253,7 +253,7 @@ impl Bat {
     fn seek_player(&mut self, _owner: TRef<'_, KinematicBody2D>) {
         let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER).try_to::<bool>().unwrap_or(false);
         if can_see_player {
-            self.state = BatState::CHASE
+            self.state = BatState::Chase
         }
     }
 
@@ -262,9 +262,9 @@ impl Bat {
     #[inline]
     fn pick_random_state(&mut self) -> BatState {
         if self.rand.randi_range(1, 2) == 1 {
-            BatState::IDLE
+            BatState::Idle
         } else {
-            BatState::WANDER
+            BatState::Wander
         }
     }
 
@@ -302,7 +302,7 @@ impl Bat {
     #[method]
     #[allow(non_snake_case)]
     fn _on_Stats_no_health(&self, #[base] owner: TRef<KinematicBody2D>) {
-        self.play_effect_parent(&*owner);
+        self.play_effect_parent(&owner);
         owner.queue_free();
     }
 }

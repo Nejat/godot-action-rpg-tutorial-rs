@@ -34,7 +34,7 @@ impl Grass {
     #[method]
     #[allow(non_snake_case)]
     fn _on_HurtBox_area_entered(&mut self, #[base] owner: TRef<Node2D>, _area: Ref<Area2D>) {
-        self.play_effect_parent(&*owner);
+        self.play_effect_parent(&owner);
         owner.queue_free();
     }
 }

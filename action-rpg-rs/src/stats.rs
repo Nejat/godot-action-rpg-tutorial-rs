@@ -1,8 +1,8 @@
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-pub(crate) const PROPERTY_HEALTH: &'static str = "health";
-pub(crate) const PROPERTY_MAX_HEALTH: &'static str = "max_health";
+pub(crate) const PROPERTY_HEALTH: &str = "health";
+pub(crate) const PROPERTY_MAX_HEALTH: &str = "max_health";
 
 const DEFAULT_HEALTH: Health = 1;
 

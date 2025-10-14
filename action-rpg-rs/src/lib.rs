@@ -1,3 +1,10 @@
+// Allow macro metavariables in unsafe blocks - these are utility macros designed to encapsulate
+// unsafe Godot operations and the warnings are about macro design rather than actual unsafe behavior
+#![allow(clippy::macro_metavars_in_unsafe)]
+// Allow unexpected cfg condition from GDNative's godot_init! macro - this warning comes from
+// the macro's internal cfg attributes and is not something we can control in our application code
+#![allow(unexpected_cfgs)]
+
 use gdnative::prelude::*;
 
 mod bat;

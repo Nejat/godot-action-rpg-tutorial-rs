@@ -177,7 +177,7 @@ impl Player {
 
     #[method]
     fn roll_animation_finished(&mut self, #[base] _owner: TRef<KinematicBody2D>) {
-        self.velocity = self.velocity * 0.8; // ease sliding past roll animation
+        self.velocity *= 0.8; // ease sliding past roll animation
         self.state = PlayerState::Move
     }
 
@@ -276,7 +276,7 @@ impl Player {
 
         assume_safe! {
             let instance: Node = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED),
-            let root: SceneTree = Node::get_tree(&*owner),
+            let root: SceneTree = Node::get_tree(&owner),
             let scene: Node = root.current_scene() => {
                 scene.add_child(instance, false);
             }

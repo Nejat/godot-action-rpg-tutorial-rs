@@ -89,7 +89,7 @@ impl HurtBox {
 
     #[method]
     fn play_hit_effect(&mut self, #[base] owner: TRef<Node2D>) {
-        self.play_effect_root(&*owner);
+        self.play_effect_root(&owner);
     }
 
     #[method]
