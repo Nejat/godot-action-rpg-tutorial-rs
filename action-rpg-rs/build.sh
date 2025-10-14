@@ -28,7 +28,7 @@ library="libaction_rpg_rs"
 
 case "$(uname -sr)" in
    Darwin*)
-     library="$library.dynlib"
+     library="$library.dylib"
      ;;
 
    Linux*|Linux*Microsoft*|CYGWIN*|MINGW*|MINGW32*|MSYS*)
