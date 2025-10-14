@@ -276,18 +276,19 @@ impl Player {
         let current_health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
         let new_health = current_health - 1;
         
-        // Set health directly on the Stats node
-        unsafe { player_stats.assume_safe() }.set(PROPERTY_HEALTH, new_health.to_variant());
+        set_parameter!(player_stats; PROPERTY_HEALTH = new_health.to_variant());
         
         // Verify the health was set
         let verify_health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
         
         // Manually update the health UI since signals aren't working
-        let scene_tree = owner.get_tree().unwrap();
-        let current_scene = unsafe { scene_tree.assume_safe() }.current_scene().unwrap();
-        if let Some(health_ui) = unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI") {
-            unsafe { 
-                health_ui.assume_safe().call("set_hearts", &[verify_health.to_variant()]);
+        if let Some(scene_tree) = owner.get_tree() {
+            if let Some(current_scene) = unsafe { scene_tree.assume_safe() }.current_scene() {
+                if let Some(health_ui) = unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI") {
+                    unsafe { 
+                        health_ui.assume_safe().call("set_hearts", &[verify_health.to_variant()]);
+                    }
+                }
             }
         }
         

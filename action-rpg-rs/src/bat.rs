@@ -10,7 +10,7 @@ use crate::soft_collision::{METHOD_GET_PUSH_VECTOR, METHOD_IS_COLLIDING};
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
 use crate::wander::{METHOD_IS_TIMER_COMPLETE, METHOD_START_TIMER, PROPERTY_TARGET_POSITION};
-use crate::{assume_safe, call, child_node, get_parameter, load_resource};
+use crate::{assume_safe, call, child_node, get_parameter, load_resource, set_parameter};
 
 pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
 pub(crate) const PROPERTY_FRICTION: &str = "friction";
@@ -276,8 +276,7 @@ impl Bat {
         let current_health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
         let new_health = current_health - damage;
         
-        // Set health directly on the Stats node
-        unsafe { stats.assume_safe() }.set(PROPERTY_HEALTH, new_health.to_variant());
+        set_parameter!(stats; PROPERTY_HEALTH = new_health.to_variant());
         
         // Verify the health was set
         let verify_health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
