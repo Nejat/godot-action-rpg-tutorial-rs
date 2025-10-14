@@ -51,20 +51,29 @@ impl Stats {
             name: "health",
             default: DEFAULT_HEALTH.to_variant(),
             export_info: ExportInfo::new(VariantType::I64),
-            usage: PropertyUsage::DEFAULT
+            usage: PropertyUsage::DEFAULT,
         };
 
-        builder.add_signal(Signal { name: SIGNAL_HEALTH_CHANGED, args: &[health_arg] });
+        builder.add_signal(Signal {
+            name: SIGNAL_HEALTH_CHANGED,
+            args: &[health_arg],
+        });
 
         let max_health_arg = SignalArgument {
             name: "max_health",
             default: DEFAULT_HEALTH.to_variant(),
             export_info: ExportInfo::new(VariantType::I64),
-            usage: PropertyUsage::DEFAULT
+            usage: PropertyUsage::DEFAULT,
         };
 
-        builder.add_signal(Signal { name: SIGNAL_MAX_HEALTH_CHANGED, args: &[max_health_arg] });
-        builder.add_signal(Signal { name: SIGNAL_NO_HEALTH, args: &[] });
+        builder.add_signal(Signal {
+            name: SIGNAL_MAX_HEALTH_CHANGED,
+            args: &[max_health_arg],
+        });
+        builder.add_signal(Signal {
+            name: SIGNAL_NO_HEALTH,
+            args: &[],
+        });
     }
 }
 

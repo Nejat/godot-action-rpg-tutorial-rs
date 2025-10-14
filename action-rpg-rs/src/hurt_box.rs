@@ -1,8 +1,8 @@
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{assume_safe, child_node, load_resource};
 use crate::has_effect::HasEffect;
+use crate::{assume_safe, child_node, load_resource};
 
 type Duration = f64;
 
@@ -50,9 +50,15 @@ impl HurtBox {
             .with_default(DEFAULT_INVINCIBLE)
             .done();
 
-        builder.add_signal(Signal { name: SIGNAL_INVINCIBILITY_ENDED, args: &[] });
+        builder.add_signal(Signal {
+            name: SIGNAL_INVINCIBILITY_ENDED,
+            args: &[],
+        });
 
-        builder.add_signal(Signal { name: SIGNAL_INVINCIBILITY_STARTED, args: &[] });
+        builder.add_signal(Signal {
+            name: SIGNAL_INVINCIBILITY_STARTED,
+            args: &[],
+        });
     }
 
     fn set_invincible(&mut self, owner: TRef<Node2D>, invincible: bool) {

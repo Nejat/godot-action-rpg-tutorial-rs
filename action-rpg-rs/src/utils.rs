@@ -4,7 +4,14 @@ macro_rules! array_item {
         unsafe {
             $ary.get_ref($index)
                 .try_to_object::<$type>()
-                .expect(concat!(stringify!($type), " at ", stringify!($ary), "[", stringify!($index), "]"))
+                .expect(concat!(
+                    stringify!($type),
+                    " at ",
+                    stringify!($ary),
+                    "[",
+                    stringify!($index),
+                    "]"
+                ))
                 .assume_safe()
         }
     };
@@ -12,7 +19,14 @@ macro_rules! array_item {
         unsafe {
             $ary.get_ref($index)
                 .try_to_object::<$type>()
-                .expect(concat!(stringify!($type), " at ", stringify!($ary), "[", stringify!($index), "]"))
+                .expect(concat!(
+                    stringify!($type),
+                    " at ",
+                    stringify!($ary),
+                    "[",
+                    stringify!($index),
+                    "]"
+                ))
                 .assume_safe()
         }
     };
@@ -103,26 +117,46 @@ macro_rules! call {
 macro_rules! child_node {
     (claim $owner:ident [ $child:literal ] : $type:ty) => {
         unsafe {
-            $owner.get_node_as::<$type>($child)
-                .expect(concat!("\"", $child, "\" ", stringify!($type), " Child Node"))
-        }.claim()
+            $owner.get_node_as::<$type>($child).expect(concat!(
+                "\"",
+                $child,
+                "\" ",
+                stringify!($type),
+                " Child Node"
+            ))
+        }
+        .claim()
     };
     ($owner:ident [ $child:literal ] ) => {
-        $owner.get_node($child)
+        $owner
+            .get_node($child)
             .expect(concat!("\"", $child, "\" Child Node"))
     };
-    ($owner:ident [ $child:literal ] : $type:ty) => { unsafe {
-            $owner.get_node_as::<$type>($child)
-            .expect(concat!("\"", $child, "\" ", stringify!($type), " Child Node"))
-    } };
+    ($owner:ident [ $child:literal ] : $type:ty) => {
+        unsafe {
+            $owner.get_node_as::<$type>($child).expect(concat!(
+                "\"",
+                $child,
+                "\" ",
+                stringify!($type),
+                " Child Node"
+            ))
+        }
+    };
     ($var:ident: $type:ty = $owner:ident [ $child:literal ] ) => {
         let $var = unsafe {
-            $owner.get_node_as::<$type>($child)
-                .expect(concat!("\"", $child, "\" ", stringify!($type), " Child Node"))
+            $owner.get_node_as::<$type>($child).expect(concat!(
+                "\"",
+                $child,
+                "\" ",
+                stringify!($type),
+                " Child Node"
+            ))
         };
     };
     ($var:ident = $owner:ident [ $child:literal ] ) => {
-        let $var = $owner.get_node($child)
+        let $var = $owner
+            .get_node($child)
             .expect(concat!("\"", $child, "\" Child Node"));
     };
 }
@@ -130,51 +164,119 @@ macro_rules! child_node {
 #[macro_export]
 macro_rules! get_parameter {
     ($var:ident : $type:ty = $source:ident [ @ $param:literal ]) => {
-        let $var = $source.get(concat!("parameters/", $param))
+        let $var = $source
+            .get(concat!("parameters/", $param))
             .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"parameters/", $param, "\""));
+            .expect(concat!(
+                "\"",
+                stringify!($var),
+                ": ",
+                stringify!($type),
+                "\" getting parameter ",
+                "\"parameters/",
+                $param,
+                "\""
+            ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:expr ; @ $param:literal) => {
-        let $var = $source.get(concat!("parameters/", $param))
+        let $var = $source
+            .get(concat!("parameters/", $param))
             .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"parameters/", $param, "\""));
+            .expect(concat!(
+                "\"",
+                stringify!($var),
+                ": ",
+                stringify!($type),
+                "\" getting parameter ",
+                "\"parameters/",
+                $param,
+                "\""
+            ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:ident [ @ $param:ident ]) => {
-        let $var = $source.get(concat!("parameters/", $param))
+        let $var = $source
+            .get(concat!("parameters/", $param))
             .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"parameters/", stringify!($param), "\""));
+            .expect(concat!(
+                "\"",
+                stringify!($var),
+                ": ",
+                stringify!($type),
+                "\" getting parameter ",
+                "\"parameters/",
+                stringify!($param),
+                "\""
+            ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:expr ; @ $param:ident) => {
-        let $var = $source.get(concat!("parameters/", $param))
+        let $var = $source
+            .get(concat!("parameters/", $param))
             .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"parameters/", stringify!($param), "\""));
+            .expect(concat!(
+                "\"",
+                stringify!($var),
+                ": ",
+                stringify!($type),
+                "\" getting parameter ",
+                "\"parameters/",
+                stringify!($param),
+                "\""
+            ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:ident [ $param:literal ]) => {
-        let $var = $source.get($param)
-            .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"", $param, "\""));
+        let $var = $source.get($param).try_to_object::<$type>().expect(concat!(
+            "\"",
+            stringify!($var),
+            ": ",
+            stringify!($type),
+            "\" getting parameter ",
+            "\"",
+            $param,
+            "\""
+        ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:expr; $param:literal) => {
-        let $var = $source.get($param)
-            .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"", $param, "\""));
+        let $var = $source.get($param).try_to_object::<$type>().expect(concat!(
+            "\"",
+            stringify!($var),
+            ": ",
+            stringify!($type),
+            "\" getting parameter ",
+            "\"",
+            $param,
+            "\""
+        ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:ident [ $param:ident ]) => {
-        let $var = $source.get($param)
-            .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"", stringify!($param), "\""));
+        let $var = $source.get($param).try_to_object::<$type>().expect(concat!(
+            "\"",
+            stringify!($var),
+            ": ",
+            stringify!($type),
+            "\" getting parameter ",
+            "\"",
+            stringify!($param),
+            "\""
+        ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($var:ident : $type:ty = $source:expr; $param:ident) => {
-        let $var = $source.get($param)
-            .try_to_object::<$type>()
-            .expect(concat!("\"", stringify!($var), ": ", stringify!($type), "\" getting parameter ", "\"", stringify!($param), "\""));
+        let $var = $source.get($param).try_to_object::<$type>().expect(concat!(
+            "\"",
+            stringify!($var),
+            ": ",
+            stringify!($type),
+            "\" getting parameter ",
+            "\"",
+            stringify!($param),
+            "\""
+        ));
         let $var = unsafe { $var.assume_safe() };
     };
     ($source:ident [ $param:literal ]) => {{
@@ -196,7 +298,8 @@ macro_rules! load_resource {
     ($res:ident : $type:ty = $src:literal $code:block) => {
         if let Some($res) = ResourceLoader::godot_singleton()
             .load(concat!("res://", $src), stringify!($type), false)
-            .and_then(|res| res.cast::<$type>()) {
+            .and_then(|res| res.cast::<$type>())
+        {
             let $res = unsafe { $res.assume_safe() };
             $code
         }
@@ -204,7 +307,8 @@ macro_rules! load_resource {
     ($res:ident : $type:ty = $src:expr => $code:block) => {
         if let Some($res) = ResourceLoader::godot_singleton()
             .load($src, stringify!($type), false)
-            .and_then(|res| res.cast::<$type>())  {
+            .and_then(|res| res.cast::<$type>())
+        {
             let $res = unsafe { $res.assume_safe() };
             $code
         }

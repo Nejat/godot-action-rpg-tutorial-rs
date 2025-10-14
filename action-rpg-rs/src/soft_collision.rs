@@ -11,13 +11,15 @@ pub(crate) const METHOD_GET_PUSH_VECTOR: &str = "get_push_vector";
 pub struct SoftCollision;
 
 impl SoftCollision {
-    fn new(_owner: &Area2D) -> Self { SoftCollision }
+    fn new(_owner: &Area2D) -> Self {
+        SoftCollision
+    }
 }
 
 #[methods]
 impl SoftCollision {
     #[export]
-    fn get_push_vector (&self, owner: &Area2D) -> Vector2 {
+    fn get_push_vector(&self, owner: &Area2D) -> Vector2 {
         let areas = owner.get_overlapping_areas();
         let mut push_vector = Vector2::zero();
 
@@ -35,7 +37,7 @@ impl SoftCollision {
     }
 
     #[export]
-    fn is_colliding (&self, owner: &Area2D) -> bool {
+    fn is_colliding(&self, owner: &Area2D) -> bool {
         !owner.get_overlapping_areas().is_empty()
     }
 }

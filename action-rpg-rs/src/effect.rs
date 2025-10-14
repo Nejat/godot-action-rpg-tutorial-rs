@@ -16,7 +16,13 @@ impl Effect {
     #[export]
     fn _ready(&mut self, owner: TRef<AnimatedSprite>) {
         owner
-            .connect("animation_finished", owner, "_on_animation_finished", VariantArray::new_shared(), 1)
+            .connect(
+                "animation_finished",
+                owner,
+                "_on_animation_finished",
+                VariantArray::new_shared(),
+                1,
+            )
             .expect("_on_animation_finished to connect to effect instance");
 
         owner.set_frame(0);

@@ -1,8 +1,8 @@
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{assume_safe, auto_load, child_node};
 use crate::stats::{PROPERTY_MAX_HEALTH, SIGNAL_HEALTH_CHANGED, SIGNAL_MAX_HEALTH_CHANGED};
+use crate::{assume_safe, auto_load, child_node};
 
 type Hearts = i64;
 
@@ -59,14 +59,18 @@ impl HealthUI {
 
     #[inline]
     fn update_health_ui(&self) {
-        assume_safe!(self.hearts_full)
-            .set_size(Vector2::new(self.hearts as f32 * HEART_WIDTH, HEART_HEIGHT), false);
+        assume_safe!(self.hearts_full).set_size(
+            Vector2::new(self.hearts as f32 * HEART_WIDTH, HEART_HEIGHT),
+            false,
+        );
     }
 
     #[inline]
     fn update_max_health_ui(&self) {
-        assume_safe!(self.hearts_empty)
-            .set_size(Vector2::new(self.max_hearts as f32 * HEART_WIDTH, HEART_HEIGHT), false);
+        assume_safe!(self.hearts_empty).set_size(
+            Vector2::new(self.max_hearts as f32 * HEART_WIDTH, HEART_HEIGHT),
+            false,
+        );
     }
 }
 
@@ -82,11 +86,23 @@ impl HealthUI {
         let player_stats = auto_load!("PlayerStats": Node);
 
         player_stats
-            .connect(SIGNAL_HEALTH_CHANGED, owner.clone(), "set_hearts", VariantArray::new_shared(), 1)
+            .connect(
+                SIGNAL_HEALTH_CHANGED,
+                owner.clone(),
+                "set_hearts",
+                VariantArray::new_shared(),
+                1,
+            )
             .expect("set_hearts to connect to player stats");
 
         player_stats
-            .connect(SIGNAL_MAX_HEALTH_CHANGED, owner.clone(), "set_max_hearts", VariantArray::new_shared(), 1)
+            .connect(
+                SIGNAL_MAX_HEALTH_CHANGED,
+                owner.clone(),
+                "set_max_hearts",
+                VariantArray::new_shared(),
+                1,
+            )
             .expect("set_max_hearts to connect to player stats");
 
         self.set_max_hearts(owner, player_stats.get(PROPERTY_MAX_HEALTH).to_i64());

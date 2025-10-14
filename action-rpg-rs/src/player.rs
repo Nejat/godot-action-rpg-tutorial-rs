@@ -3,13 +3,13 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
-use crate::{
-    assume_safe, auto_load, blend_position, call,
-    child_node, get_parameter, load_resource, set_parameter,
-};
 use crate::hurt_box::{METHOD_PLAY_HIT_EFFECT, METHOD_START_INVINCIBILITY};
 use crate::stats::{PROPERTY_HEALTH, SIGNAL_NO_HEALTH};
 use crate::sword::PROPERTY_KNOCK_BACK_VECTOR;
+use crate::{
+    assume_safe, auto_load, blend_position, call, child_node, get_parameter, load_resource,
+    set_parameter,
+};
 
 type AnimationPlayback = AnimationNodeStateMachinePlayback;
 
@@ -136,7 +136,8 @@ impl Player {
 
         self.animation_tree = Some(animation_tree.claim());
         self.animation_state = Some(animation_state.claim());
-        self.blink_animation = Some(child_node!(claim owner_ref["BlinkAnimationPlayer"]: AnimationPlayer));
+        self.blink_animation =
+            Some(child_node!(claim owner_ref["BlinkAnimationPlayer"]: AnimationPlayer));
         self.hurt_box = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
         self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
 
@@ -147,7 +148,13 @@ impl Player {
         let player_stats = auto_load!("PlayerStats": Node);
 
         player_stats
-            .connect(SIGNAL_NO_HEALTH, owner, "_on_Stats_no_health", VariantArray::new_shared(), 1)
+            .connect(
+                SIGNAL_NO_HEALTH,
+                owner,
+                "_on_Stats_no_health",
+                VariantArray::new_shared(),
+                1,
+            )
             .expect("_on_Stats_no_health to connect to player stats");
 
         self.player_stats = Some(player_stats.claim());
@@ -156,12 +163,9 @@ impl Player {
     #[export]
     fn _physics_process(&mut self, owner: &KinematicBody2D, delta: f32) {
         match self.state {
-            PlayerState::Move =>
-                self.move_state(owner, delta),
-            PlayerState::Attack =>
-                self.attack_state(owner),
-            PlayerState::Roll =>
-                self.roll_state(owner)
+            PlayerState::Move => self.move_state(owner, delta),
+            PlayerState::Attack => self.attack_state(owner),
+            PlayerState::Roll => self.roll_state(owner),
         }
     }
 
@@ -188,11 +192,11 @@ impl Player {
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::zero();
 
-        input_vector.x = (input.get_action_strength(INPUT_RIGHT) -
-            input.get_action_strength(INPUT_LEFT)) as f32;
+        input_vector.x =
+            (input.get_action_strength(INPUT_RIGHT) - input.get_action_strength(INPUT_LEFT)) as f32;
 
-        input_vector.y = (input.get_action_strength(INPUT_DOWN) -
-            input.get_action_strength(INPUT_UP)) as f32;
+        input_vector.y =
+            (input.get_action_strength(INPUT_DOWN) - input.get_action_strength(INPUT_UP)) as f32;
 
         if input_vector != Vector2::zero() {
             // in the video, the function "normalized" is used, which handles zero condition.
@@ -214,11 +218,15 @@ impl Player {
 
             assume_safe!(self.animation_state).travel(TRAVEL_RUN);
 
-            self.velocity = self.velocity.move_towards(input_vector * self.max_speed, self.acceleration * delta);
+            self.velocity = self
+                .velocity
+                .move_towards(input_vector * self.max_speed, self.acceleration * delta);
         } else {
             assume_safe!(self.animation_state).travel(TRAVEL_IDLE);
 
-            self.velocity = self.velocity.move_towards(Vector2::zero(), self.friction * delta);
+            self.velocity = self
+                .velocity
+                .move_towards(Vector2::zero(), self.friction * delta);
         }
 
         self.move_player(owner);
@@ -246,7 +254,8 @@ impl Player {
         // FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the
         // documented default value of 0.785398 for "floor_max_angle"
 
-        self.velocity = owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
+        self.velocity =
+            owner.move_and_slide(self.velocity, Vector2::zero(), false, 4, FRAC_PI_4, true);
     }
 
     #[export]

@@ -34,7 +34,7 @@ impl WanderController {
             start_position: Vector2::zero(),
             target_position: Vector2::zero(),
             timer: None,
-            wander_ranger: DEFAULT_WANDER_RANGE
+            wander_ranger: DEFAULT_WANDER_RANGE,
         }
     }
 
@@ -70,7 +70,7 @@ impl WanderController {
     }
 
     #[export]
-    fn is_timer_complete(&self, _owner: &Node2D) -> bool{
+    fn is_timer_complete(&self, _owner: &Node2D) -> bool {
         get_parameter!(self.timer.unwrap(); "time_left").to_f64() == 0.0
     }
 
@@ -87,7 +87,8 @@ impl WanderController {
 
     #[inline]
     fn random_wander_range(&self) -> f32 {
-        self.rand.randf_range(-self.wander_ranger as f64, self.wander_ranger as f64) as f32
+        self.rand
+            .randf_range(-self.wander_ranger as f64, self.wander_ranger as f64) as f32
     }
 
     #[inline]

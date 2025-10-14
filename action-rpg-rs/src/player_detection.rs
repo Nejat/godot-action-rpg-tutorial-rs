@@ -16,9 +16,7 @@ pub struct PlayerDetectionZone {
 
 impl PlayerDetectionZone {
     fn new(_owner: &Area2D) -> Self {
-        PlayerDetectionZone {
-            player: None
-        }
+        PlayerDetectionZone { player: None }
     }
 
     fn register(builder: &ClassBuilder<Self>) {
@@ -34,10 +32,14 @@ impl PlayerDetectionZone {
 #[methods]
 impl PlayerDetectionZone {
     #[export]
-    pub(crate) fn can_see_player(&self, _owner: &Area2D) -> bool { self.player.is_some() }
+    pub(crate) fn can_see_player(&self, _owner: &Area2D) -> bool {
+        self.player.is_some()
+    }
 
     #[export]
-    pub(crate) fn get_player(&self, _owner: &Area2D) -> Variant { self.player.to_variant() }
+    pub(crate) fn get_player(&self, _owner: &Area2D) -> Variant {
+        self.player.to_variant()
+    }
 
     #[export]
     #[allow(non_snake_case)]
