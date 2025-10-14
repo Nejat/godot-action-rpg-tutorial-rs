@@ -279,18 +279,10 @@ macro_rules! get_parameter {
         ));
         let $var = unsafe { $var.assume_safe() };
     };
-    ($source:ident [ $param:literal ]) => {{
-        unsafe { $source.assume_safe() }.get($param)
-    }};
-    ($source:expr ; $param:literal) => {{
-        unsafe { $source.assume_safe() }.get($param)
-    }};
-    ($source:ident [ $param:ident ]) => {{
-        unsafe { $source.assume_safe() }.get($param)
-    }};
-    ($source:expr ; $param:ident) => {{
-        unsafe { $source.assume_safe() }.get($param)
-    }};
+    ($source:ident [ $param:literal ]) => {{ unsafe { $source.assume_safe() }.get($param) }};
+    ($source:expr ; $param:literal) => {{ unsafe { $source.assume_safe() }.get($param) }};
+    ($source:ident [ $param:ident ]) => {{ unsafe { $source.assume_safe() }.get($param) }};
+    ($source:expr ; $param:ident) => {{ unsafe { $source.assume_safe() }.get($param) }};
 }
 
 #[macro_export]

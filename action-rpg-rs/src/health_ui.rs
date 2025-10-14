@@ -105,7 +105,13 @@ impl HealthUI {
             )
             .expect("set_max_hearts to connect to player stats");
 
-        self.set_max_hearts(owner, player_stats.get(PROPERTY_MAX_HEALTH).try_to::<i64>().unwrap_or(0));
+        self.set_max_hearts(
+            owner,
+            player_stats
+                .get(PROPERTY_MAX_HEALTH)
+                .try_to::<i64>()
+                .unwrap_or(0),
+        );
 
         self.player_stats = Some(player_stats.claim());
     }

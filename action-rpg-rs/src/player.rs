@@ -201,11 +201,11 @@ impl Player {
         let input = Input::godot_singleton();
         let mut input_vector = Vector2::new(0.0, 0.0);
 
-        input_vector.x =
-            (input.get_action_strength(INPUT_RIGHT, false) - input.get_action_strength(INPUT_LEFT, false)) as f32;
+        input_vector.x = (input.get_action_strength(INPUT_RIGHT, false)
+            - input.get_action_strength(INPUT_LEFT, false)) as f32;
 
-        input_vector.y =
-            (input.get_action_strength(INPUT_DOWN, false) - input.get_action_strength(INPUT_UP, false)) as f32;
+        input_vector.y = (input.get_action_strength(INPUT_DOWN, false)
+            - input.get_action_strength(INPUT_UP, false)) as f32;
 
         if input_vector != Vector2::new(0.0, 0.0) {
             // in the video, the function "normalized" is used, which handles zero condition.
@@ -263,35 +263,53 @@ impl Player {
         // FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the
         // documented default value of 0.785398 for "floor_max_angle"
 
-        self.velocity =
-            owner.move_and_slide(self.velocity, Vector2::new(0.0, 0.0), false, 4, FRAC_PI_4, true);
+        self.velocity = owner.move_and_slide(
+            self.velocity,
+            Vector2::new(0.0, 0.0),
+            false,
+            4,
+            FRAC_PI_4,
+            true,
+        );
     }
 
     #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(&mut self, #[base] owner: TRef<KinematicBody2D>, _area: Ref<Area2D>) {
+    fn _on_HurtBox_area_entered(
+        &mut self,
+        #[base] owner: TRef<KinematicBody2D>,
+        _area: Ref<Area2D>,
+    ) {
         // enemy hit box does not have damage, the video "fix" causes a bug
         // let damage = get_parameter!(area[PROPERTY_DAMAGE]).to_i64();
         let player_stats = self.player_stats.unwrap();
-        let current_health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+        let current_health = get_parameter!(player_stats; PROPERTY_HEALTH)
+            .try_to::<i64>()
+            .unwrap_or(0);
         let new_health = current_health - 1;
-        
+
         set_parameter!(player_stats; PROPERTY_HEALTH = new_health.to_variant());
-        
+
         // Verify the health was set
-        let verify_health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
-        
+        let verify_health = get_parameter!(player_stats; PROPERTY_HEALTH)
+            .try_to::<i64>()
+            .unwrap_or(0);
+
         // Manually update the health UI since signals aren't working
         if let Some(scene_tree) = owner.get_tree() {
             if let Some(current_scene) = unsafe { scene_tree.assume_safe() }.current_scene() {
-                if let Some(health_ui) = unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI") {
-                    unsafe { 
-                        health_ui.assume_safe().call("set_hearts", &[verify_health.to_variant()]);
+                if let Some(health_ui) =
+                    unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI")
+                {
+                    unsafe {
+                        health_ui
+                            .assume_safe()
+                            .call("set_hearts", &[verify_health.to_variant()]);
                     }
                 }
             }
         }
-        
+
         // If health is 0 or below, manually call the death logic
         if verify_health <= 0 {
             // Player death logic - play death effect then remove player

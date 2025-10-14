@@ -44,6 +44,5 @@ impl Sword {
 #[methods]
 impl Sword {
     #[method]
-    fn _ready(&mut self, #[base] _owner: TRef<Area2D>) {
-    }
+    fn _ready(&mut self, #[base] _owner: TRef<Area2D>) {}
 }

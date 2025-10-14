@@ -196,7 +196,8 @@ impl Bat {
                 let target_position = get_parameter!(
                     self.wander_controller.unwrap(); PROPERTY_TARGET_POSITION
                 )
-                .try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0));
+                .try_to::<Vector2>()
+                .unwrap_or(Vector2::new(0.0, 0.0));
 
                 let direction = owner.global_position().direction_to(target_position);
 
@@ -208,8 +209,13 @@ impl Bat {
             }
         }
 
-        if call!(self.soft_collision; METHOD_IS_COLLIDING).try_to::<bool>().unwrap_or(false) {
-            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR).try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0))
+        if call!(self.soft_collision; METHOD_IS_COLLIDING)
+            .try_to::<bool>()
+            .unwrap_or(false)
+        {
+            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR)
+                .try_to::<Vector2>()
+                .unwrap_or(Vector2::new(0.0, 0.0))
                 * delta
                 * self.push_vector_force;
         }
@@ -220,7 +226,14 @@ impl Bat {
             assume_safe!(self.sprite).set_flip_h(self.velocity.x < 0.0);
         }
 
-        owner.move_and_slide(self.velocity, Vector2::new(0.0, 0.0), false, 4, FRAC_PI_4, true);
+        owner.move_and_slide(
+            self.velocity,
+            Vector2::new(0.0, 0.0),
+            false,
+            4,
+            FRAC_PI_4,
+            true,
+        );
     }
 
     #[inline]
@@ -242,7 +255,9 @@ impl Bat {
 
     #[inline]
     fn next_state_on_finish(&mut self, max_secs: f64) {
-        let timer_complete = call!(self.wander_controller; METHOD_IS_TIMER_COMPLETE).try_to::<bool>().unwrap_or(false);
+        let timer_complete = call!(self.wander_controller; METHOD_IS_TIMER_COMPLETE)
+            .try_to::<bool>()
+            .unwrap_or(false);
 
         if timer_complete {
             self.next_state(max_secs);
@@ -251,7 +266,9 @@ impl Bat {
 
     #[inline]
     fn seek_player(&mut self, _owner: TRef<'_, KinematicBody2D>) {
-        let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER).try_to::<bool>().unwrap_or(false);
+        let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER)
+            .try_to::<bool>()
+            .unwrap_or(false);
         if can_see_player {
             self.state = BatState::Chase
         }
@@ -270,17 +287,27 @@ impl Bat {
 
     #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(&mut self, #[base] owner: TRef<KinematicBody2D>, area: Ref<Area2D>) {
-        let damage = get_parameter!(area[PROPERTY_DAMAGE]).try_to::<i64>().unwrap_or(0);
+    fn _on_HurtBox_area_entered(
+        &mut self,
+        #[base] owner: TRef<KinematicBody2D>,
+        area: Ref<Area2D>,
+    ) {
+        let damage = get_parameter!(area[PROPERTY_DAMAGE])
+            .try_to::<i64>()
+            .unwrap_or(0);
         let stats = self.stats.unwrap();
-        let current_health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+        let current_health = get_parameter!(stats; PROPERTY_HEALTH)
+            .try_to::<i64>()
+            .unwrap_or(0);
         let new_health = current_health - damage;
-        
+
         set_parameter!(stats; PROPERTY_HEALTH = new_health.to_variant());
-        
+
         // Verify the health was set
-        let verify_health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
-        
+        let verify_health = get_parameter!(stats; PROPERTY_HEALTH)
+            .try_to::<i64>()
+            .unwrap_or(0);
+
         // If health is 0 or below, manually call the death logic
         if verify_health <= 0 {
             self.play_effect_parent(&owner);
@@ -288,8 +315,10 @@ impl Bat {
             return; // Exit early since the bat is dead
         }
 
-        self.knock_back =
-            get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0)) * self.knock_back_force;
+        self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR])
+            .try_to::<Vector2>()
+            .unwrap_or(Vector2::new(0.0, 0.0))
+            * self.knock_back_force;
 
         call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.4.to_variant()));
         call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);

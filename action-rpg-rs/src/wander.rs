@@ -72,7 +72,10 @@ impl WanderController {
 
     #[method]
     fn is_timer_complete(&self, #[base] _owner: TRef<Node2D>) -> bool {
-        get_parameter!(self.timer.unwrap(); "time_left").try_to::<f64>().unwrap_or(0.0) == 0.0
+        get_parameter!(self.timer.unwrap(); "time_left")
+            .try_to::<f64>()
+            .unwrap_or(0.0)
+            == 0.0
     }
 
     #[method]

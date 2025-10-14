@@ -78,12 +78,13 @@ impl HurtBox {
     #[method]
     fn _ready(&mut self, #[base] owner: TRef<Node2D>) {
         let owner_ref = owner;
-        
+
         load_resource! { scene: PackedScene = "Effects/HitEffect.tscn" {
             self.effect = Some(scene.claim())
         } }
 
-        self.collision_shape = Some(child_node!(claim owner_ref["CollisionShape2D"]: CollisionShape2D));
+        self.collision_shape =
+            Some(child_node!(claim owner_ref["CollisionShape2D"]: CollisionShape2D));
         self.timer = Some(child_node!(claim owner_ref["Timer"]: Timer));
     }
 

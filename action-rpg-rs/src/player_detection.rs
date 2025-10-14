@@ -43,13 +43,21 @@ impl PlayerDetectionZone {
 
     #[method]
     #[allow(non_snake_case)]
-    fn _on_PlayerDetectionZone_body_entered(&mut self, #[base] _owner: TRef<Area2D>, body: Ref<Node>) {
+    fn _on_PlayerDetectionZone_body_entered(
+        &mut self,
+        #[base] _owner: TRef<Area2D>,
+        body: Ref<Node>,
+    ) {
         self.player = Some(body);
     }
 
     #[method]
     #[allow(non_snake_case)]
-    fn _on_PlayerDetectionZone_body_exited(&mut self, #[base] _owner: TRef<Area2D>, _body: Ref<Node>) {
+    fn _on_PlayerDetectionZone_body_exited(
+        &mut self,
+        #[base] _owner: TRef<Area2D>,
+        _body: Ref<Node>,
+    ) {
         self.player = None
     }
 }

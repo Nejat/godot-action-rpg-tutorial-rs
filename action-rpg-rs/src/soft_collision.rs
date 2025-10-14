@@ -27,7 +27,9 @@ impl SoftCollision {
         if !areas.is_empty() {
             let area = array_item! { areas[0]: Node2D };
 
-            push_vector = area.global_position().direction_to(owner_ref.global_position());
+            push_vector = area
+                .global_position()
+                .direction_to(owner_ref.global_position());
 
             if push_vector != Vector2::new(0.0, 0.0) {
                 push_vector = push_vector.normalized();
