@@ -10,7 +10,7 @@ use crate::soft_collision::{METHOD_GET_PUSH_VECTOR, METHOD_IS_COLLIDING};
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
 use crate::wander::{METHOD_IS_TIMER_COMPLETE, METHOD_START_TIMER, PROPERTY_TARGET_POSITION};
-use crate::{assume_safe, call, child_node, get_parameter, load_resource, set_parameter};
+use crate::{assume_safe, call, child_node, get_parameter, load_resource};
 
 pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
 pub(crate) const PROPERTY_FRICTION: &str = "friction";
@@ -270,12 +270,24 @@ impl Bat {
 
     #[method]
     #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(&mut self, #[base] _owner: TRef<KinematicBody2D>, area: Ref<Area2D>) {
+    fn _on_HurtBox_area_entered(&mut self, #[base] owner: TRef<KinematicBody2D>, area: Ref<Area2D>) {
         let damage = get_parameter!(area[PROPERTY_DAMAGE]).try_to::<i64>().unwrap_or(0);
         let stats = self.stats.unwrap();
-        let health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
-
-        set_parameter!(stats; PROPERTY_HEALTH = health - damage);
+        let current_health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+        let new_health = current_health - damage;
+        
+        // Set health directly on the Stats node
+        unsafe { stats.assume_safe() }.set(PROPERTY_HEALTH, new_health.to_variant());
+        
+        // Verify the health was set
+        let verify_health = get_parameter!(stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+        
+        // If health is 0 or below, manually call the death logic
+        if verify_health <= 0 {
+            self.play_effect_parent(&owner);
+            owner.queue_free();
+            return; // Exit early since the bat is dead
+        }
 
         self.knock_back =
             get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR]).try_to::<Vector2>().unwrap_or(Vector2::new(0.0, 0.0)) * self.knock_back_force;
@@ -299,6 +311,7 @@ impl Bat {
     // when connecting signal in the godot editor, click the "advanced" switch
     // and select the "deferred" option, otherwise an exception occurs
     // todo: figure out why this is necessary
+
     #[method]
     #[allow(non_snake_case)]
     fn _on_Stats_no_health(&self, #[base] owner: TRef<KinematicBody2D>) {

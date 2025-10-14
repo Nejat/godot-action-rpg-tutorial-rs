@@ -3,8 +3,9 @@ use std::f64::consts::FRAC_PI_4;
 use gdnative::api::*;
 use gdnative::prelude::*;
 
+use crate::has_effect::HasEffect;
 use crate::hurt_box::{METHOD_PLAY_HIT_EFFECT, METHOD_START_INVINCIBILITY};
-use crate::stats::{PROPERTY_HEALTH, SIGNAL_NO_HEALTH};
+use crate::stats::PROPERTY_HEALTH;
 use crate::sword::PROPERTY_KNOCK_BACK_VECTOR;
 use crate::{
     assume_safe, auto_load, blend_position, call, child_node, get_parameter, load_resource,
@@ -57,6 +58,7 @@ pub struct Player {
     friction: f32,
     hurt_box: Option<Ref<Node2D>>,
     hurt_sound: Option<Ref<PackedScene>>,
+    effect: Option<Ref<PackedScene>>,
     #[property]
     max_speed: f32,
     player_stats: Option<Ref<Node>>,
@@ -78,6 +80,7 @@ impl Player {
             friction: DEFAULT_FRICTION,
             hurt_box: None,
             hurt_sound: None,
+            effect: None,
             max_speed: DEFAULT_MAX_SPEED,
             roll_speed: DEFAULT_ROLL_SPEED,
             roll_vector: Vector2::new(0.0, 1.0), // DOWN
@@ -145,17 +148,22 @@ impl Player {
             self.hurt_sound = Some(scene.claim())
         } }
 
+        load_resource! { scene: PackedScene = "Effects/EnemyDeathEffect.tscn" {
+            self.effect = Some(scene.claim())
+        } }
+
         let player_stats = auto_load!("PlayerStats": Node);
 
-        player_stats
-            .connect(
-                SIGNAL_NO_HEALTH,
-                owner,
-                "_on_Stats_no_health",
-                VariantArray::new_shared(),
-                1,
-            )
-            .expect("_on_Stats_no_health to connect to player stats");
+        // Signal connection commented out since signals are not registered in Stats
+        // player_stats
+        //     .connect(
+        //         SIGNAL_NO_HEALTH,
+        //         owner,
+        //         "_on_Stats_no_health",
+        //         VariantArray::new_shared(),
+        //         1,
+        //     )
+        //     .expect("_on_Stats_no_health to connect to player stats");
 
         self.player_stats = Some(player_stats.claim());
     }
@@ -265,9 +273,31 @@ impl Player {
         // enemy hit box does not have damage, the video "fix" causes a bug
         // let damage = get_parameter!(area[PROPERTY_DAMAGE]).to_i64();
         let player_stats = self.player_stats.unwrap();
-        let health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
-
-        set_parameter!(player_stats; PROPERTY_HEALTH = health - 1);
+        let current_health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+        let new_health = current_health - 1;
+        
+        // Set health directly on the Stats node
+        unsafe { player_stats.assume_safe() }.set(PROPERTY_HEALTH, new_health.to_variant());
+        
+        // Verify the health was set
+        let verify_health = get_parameter!(player_stats; PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+        
+        // Manually update the health UI since signals aren't working
+        let scene_tree = owner.get_tree().unwrap();
+        let current_scene = unsafe { scene_tree.assume_safe() }.current_scene().unwrap();
+        if let Some(health_ui) = unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI") {
+            unsafe { 
+                health_ui.assume_safe().call("set_hearts", &[verify_health.to_variant()]);
+            }
+        }
+        
+        // If health is 0 or below, manually call the death logic
+        if verify_health <= 0 {
+            // Player death logic - play death effect then remove player
+            self.play_effect_parent(&owner);
+            owner.queue_free();
+            return; // Exit early since the player is dead
+        }
 
         call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.5.to_variant()));
         call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);
@@ -299,5 +329,11 @@ impl Player {
     #[allow(non_snake_case)]
     fn _on_Stats_no_health(&self, #[base] owner: TRef<KinematicBody2D>) {
         owner.queue_free();
+    }
+}
+
+impl HasEffect for Player {
+    fn effect_scene(&self) -> &Option<Ref<PackedScene>> {
+        &self.effect
     }
 }
