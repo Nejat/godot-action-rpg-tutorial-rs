@@ -296,17 +296,15 @@ impl Player {
             .unwrap_or(0);
 
         // Manually update the health UI since signals aren't working
-        if let Some(scene_tree) = owner.get_tree() {
-            if let Some(current_scene) = unsafe { scene_tree.assume_safe() }.current_scene() {
-                if let Some(health_ui) =
-                    unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI")
-                {
-                    unsafe {
-                        health_ui
-                            .assume_safe()
-                            .call("set_hearts", &[verify_health.to_variant()]);
-                    }
-                }
+        if let Some(scene_tree) = owner.get_tree()
+            && let Some(current_scene) = unsafe { scene_tree.assume_safe() }.current_scene()
+            && let Some(health_ui) =
+                unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI")
+        {
+            unsafe {
+                health_ui
+                    .assume_safe()
+                    .call("set_hearts", &[verify_health.to_variant()]);
             }
         }
 
