@@ -1,0 +1,7 @@
+[env]
+# this is needed for bindgen to find the clang library,
+# which is required to generate bindings for the C++ code in the project.
+# The path may vary depending on your system and how you installed LLVM.
+# For example, this path is for Homebrew on macOS
+LIBCLANG_PATH = "/opt/homebrew/opt/llvm@21/lib"
+
