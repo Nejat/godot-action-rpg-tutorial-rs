@@ -8,3 +8,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 gdnative = "0.11.3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = "symbols"
