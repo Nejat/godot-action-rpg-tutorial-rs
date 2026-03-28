@@ -1,100 +1,86 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::INode;
+use godot::prelude::*;
 
 pub(crate) const PROPERTY_HEALTH: &str = "health";
 pub(crate) const PROPERTY_MAX_HEALTH: &str = "max_health";
 
-const DEFAULT_HEALTH: Health = 1;
-
+#[allow(
+    dead_code,
+    reason = "used by set_health_value which is reserved for future signal-based API"
+)]
 const MINIMUM_HEALTH: Health = 0;
+#[allow(
+    dead_code,
+    reason = "used by set_max_health_value which is reserved for future signal-based API"
+)]
 const MINIMUM_MAX_HEALTH: Health = 1;
 
 pub(crate) const SIGNAL_HEALTH_CHANGED: &str = "health_changed";
 pub(crate) const SIGNAL_MAX_HEALTH_CHANGED: &str = "max_health_changed";
+#[allow(
+    dead_code,
+    reason = "used by set_health_value which is reserved for future signal-based API"
+)]
 pub(crate) const SIGNAL_NO_HEALTH: &str = "no_health";
 
 type Health = i64;
 
-#[derive(NativeClass)]
-#[inherit(Node)]
-#[register_with(Self::register)]
+#[derive(GodotClass)]
+#[class(base=Node)]
 pub struct Stats {
-    health: Health,
-    max_health: Health,
+    base: Base<Node>,
+    #[var]
+    pub health: Health,
+    #[var]
+    pub max_health: Health,
 }
 
-impl Stats {
-    fn new(_owner: &Node) -> Self {
+#[godot_api]
+impl INode for Stats {
+    fn init(base: Base<Node>) -> Self {
         Stats {
+            base,
             health: Health::default(),
             max_health: Health::default(),
         }
     }
-
-    fn register(builder: &ClassBuilder<Self>) {
-        builder
-            .property::<Health>(PROPERTY_MAX_HEALTH)
-            .with_getter(|s: &Self, _| s.max_health)
-            .with_setter(Self::set_max_health)
-            .with_default(DEFAULT_HEALTH)
-            .done();
-
-        builder
-            .property::<Health>(PROPERTY_HEALTH)
-            .with_getter(|s: &Self, _| s.health)
-            .with_setter(Self::set_health)
-            .with_default(DEFAULT_HEALTH)
-            .with_usage(PropertyUsage::NOEDITOR)
-            .done();
-
-        // TODO: Fix signal definitions for GDNative 0.11.3
-        // let health_arg = SignalArgument {
-        //     name: "health",
-        //     default: DEFAULT_HEALTH.to_variant(),
-        //     export_info: ExportInfo::new(VariantType::I64),
-        //     usage: PropertyUsage::DEFAULT,
-        // };
-
-        // builder.add_signal(Signal {
-        //     name: SIGNAL_HEALTH_CHANGED,
-        //     args: &[health_arg],
-        // });
-
-        // let max_health_arg = SignalArgument {
-        //     name: "max_health",
-        //     default: DEFAULT_HEALTH.to_variant(),
-        //     export_info: ExportInfo::new(VariantType::I64),
-        //     usage: PropertyUsage::DEFAULT,
-        // };
-
-        // builder.add_signal(Signal {
-        //     name: SIGNAL_MAX_HEALTH_CHANGED,
-        //     args: &[max_health_arg],
-        // });
-        // builder.add_signal(Signal {
-        //     name: SIGNAL_NO_HEALTH,
-        //     args: &[],
-        // });
-    }
 }
 
-#[methods]
+#[godot_api]
 impl Stats {
-    fn set_max_health(&mut self, owner: TRef<Node>, max_health: Health) {
+    #[signal]
+    fn health_changed(health: i64);
+
+    #[signal]
+    fn max_health_changed(max_health: i64);
+
+    #[signal]
+    fn no_health();
+
+    #[allow(dead_code, reason = "reserved for future signal-based API")]
+    pub fn set_max_health_value(&mut self, max_health: Health) {
         self.max_health = Health::max(max_health, MINIMUM_MAX_HEALTH);
 
-        owner.emit_signal(SIGNAL_MAX_HEALTH_CHANGED, &[self.max_health.to_variant()]);
+        let val = self.max_health.to_variant();
 
-        self.set_health(owner, self.max_health);
+        self.base_mut()
+            .emit_signal(SIGNAL_MAX_HEALTH_CHANGED, &[val]);
+
+        let new_health = self.max_health;
+
+        self.set_health_value(new_health);
     }
 
-    fn set_health(&mut self, owner: TRef<Node>, health: Health) {
+    #[allow(dead_code, reason = "reserved for future signal-based API")]
+    pub fn set_health_value(&mut self, health: Health) {
         self.health = Health::clamp(health, MINIMUM_HEALTH, self.max_health);
 
-        owner.emit_signal(SIGNAL_HEALTH_CHANGED, &[self.health.to_variant()]);
+        let val = self.health.to_variant();
 
-        if health <= MINIMUM_HEALTH {
-            owner.emit_signal(SIGNAL_NO_HEALTH, &[]);
+        self.base_mut().emit_signal(SIGNAL_HEALTH_CHANGED, &[val]);
+
+        if self.health <= MINIMUM_HEALTH {
+            self.base_mut().emit_signal(SIGNAL_NO_HEALTH, &[]);
         }
     }
 }

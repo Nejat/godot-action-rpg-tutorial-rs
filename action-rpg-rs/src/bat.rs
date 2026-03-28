@@ -1,25 +1,19 @@
-use std::f64::consts::FRAC_PI_4;
-
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{
+    AnimatedSprite2D, AnimationPlayer, Area2D, CharacterBody2D, ICharacterBody2D, PackedScene,
+    RandomNumberGenerator,
+};
+use godot::prelude::*;
 
 use crate::has_effect::HasEffect;
-use crate::hurt_box::{METHOD_PLAY_HIT_EFFECT, METHOD_START_INVINCIBILITY};
-use crate::player_detection::{METHOD_CAN_SEE_PLAYER, METHOD_GET_PLAYER};
-use crate::soft_collision::{METHOD_GET_PUSH_VECTOR, METHOD_IS_COLLIDING};
+use crate::hurt_box::HurtBox;
+use crate::player_detection::PlayerDetectionZone;
+use crate::soft_collision::SoftCollision;
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::{PROPERTY_DAMAGE, PROPERTY_KNOCK_BACK_VECTOR};
-use crate::wander::{METHOD_IS_TIMER_COMPLETE, METHOD_START_TIMER, PROPERTY_TARGET_POSITION};
-use crate::{assume_safe, call, child_node, get_parameter, load_resource, set_parameter};
+use crate::wander::WanderController;
 
-pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
-pub(crate) const PROPERTY_FRICTION: &str = "friction";
-pub(crate) const PROPERTY_KNOCK_BACK_FORCE: &str = "knock_back_force";
-pub(crate) const PROPERTY_MAX_SPEED: &str = "max_speed";
-pub(crate) const PROPERTY_PUSH_VECTOR_FORCE: &str = "push_vector_force";
-
-// i choose this ratio of max speed to buffer the bat's approach to it's target
-const WANDER_BUFFER_RATIO: f32 = 0.08; // this value might be frame rate dependent
+// ratio of max speed to buffer the bat's approach to its target
+const WANDER_BUFFER_RATIO: f32 = 0.08;
 
 const DEFAULT_ACCELERATION: f32 = 300.0;
 const DEFAULT_FRICTION: f32 = 200.0;
@@ -35,207 +29,198 @@ enum BatState {
     Wander,
 }
 
-#[derive(NativeClass)]
-#[inherit(KinematicBody2D)]
-#[register_with(Self::register)]
+#[derive(GodotClass)]
+#[class(base=CharacterBody2D)]
 pub struct Bat {
-    #[property]
-    acceleration: f32,
-    blink_animation: Option<Ref<AnimationPlayer>>,
-    effect: Option<Ref<PackedScene>>,
-    #[property]
-    friction: f32,
-    hurt_box: Option<Ref<Node2D>>,
+    base: Base<CharacterBody2D>,
+    #[var]
+    pub acceleration: f32,
+    blink_animation: Option<Gd<AnimationPlayer>>,
+    effect: Option<Gd<PackedScene>>,
+    #[var]
+    pub friction: f32,
+    hurt_box: Option<Gd<Area2D>>,
     knock_back: Vector2,
-    #[property]
-    knock_back_force: f32,
-    #[property]
-    max_speed: f32,
-    player_detection: Option<Ref<Area2D>>,
-    push_vector_force: f32,
-    rand: Ref<RandomNumberGenerator, Unique>,
-    soft_collision: Option<Ref<Area2D>>,
-    sprite: Option<Ref<AnimatedSprite>>,
+    #[var]
+    pub knock_back_force: f32,
+    #[var]
+    pub max_speed: f32,
+    player_detection: Option<Gd<Area2D>>,
+    #[var]
+    pub push_vector_force: f32,
+    rand: Gd<RandomNumberGenerator>,
+    soft_collision: Option<Gd<Area2D>>,
+    sprite: Option<Gd<AnimatedSprite2D>>,
     state: BatState,
-    stats: Option<Ref<Node>>,
+    stats: Option<Gd<Node>>,
     velocity: Vector2,
     wander_buffer_zone: f32,
-    wander_controller: Option<Ref<Node2D>>,
+    wander_controller: Option<Gd<Node2D>>,
 }
 
 impl HasEffect for Bat {
-    fn effect_scene(&self) -> &Option<Ref<PackedScene>> {
+    fn effect_scene(&self) -> &Option<Gd<PackedScene>> {
         &self.effect
     }
 }
 
-impl Bat {
-    fn new(_owner: TRef<KinematicBody2D>) -> Self {
+#[godot_api]
+impl ICharacterBody2D for Bat {
+    fn init(base: Base<CharacterBody2D>) -> Self {
         Bat {
+            base,
             acceleration: DEFAULT_ACCELERATION,
             blink_animation: None,
             effect: None,
             friction: DEFAULT_FRICTION,
             hurt_box: None,
-            knock_back: Vector2::new(0.0, 0.0),
+            knock_back: Vector2::ZERO,
             knock_back_force: DEFAULT_KNOCK_BACK_FORCE,
             max_speed: DEFAULT_MAX_SPEED,
             player_detection: None,
             push_vector_force: DEFAULT_PUSH_VECTOR_FORCE,
-            rand: RandomNumberGenerator::new(),
+            rand: RandomNumberGenerator::new_gd(),
             soft_collision: None,
             sprite: None,
             state: BatState::Idle,
             stats: None,
-            velocity: Vector2::new(0.0, 0.0),
+            velocity: Vector2::ZERO,
             wander_buffer_zone: DEFAULT_WANDER_BUFFER_ZONE,
             wander_controller: None,
         }
     }
 
-    //noinspection DuplicatedCode
-    fn register(builder: &ClassBuilder<Self>) {
-        builder
-            .property::<f32>(PROPERTY_ACCELERATION)
-            .with_getter(|s: &Self, _| s.acceleration)
-            .with_setter(|s: &mut Self, _, value: f32| s.acceleration = value)
-            .with_default(DEFAULT_ACCELERATION)
-            .done();
+    fn physics_process(&mut self, delta: f64) {
+        let delta = delta as f32;
 
-        builder
-            .property::<f32>(PROPERTY_FRICTION)
-            .with_getter(|s: &Self, _| s.friction)
-            .with_setter(|s: &mut Self, _, value: f32| s.friction = value)
-            .with_default(DEFAULT_FRICTION)
-            .done();
+        // knock back
+        self.knock_back = self
+            .knock_back
+            .move_toward(Vector2::ZERO, self.friction * delta);
 
-        builder
-            .property::<f32>(PROPERTY_KNOCK_BACK_FORCE)
-            .with_getter(|s: &Self, _| s.knock_back_force)
-            .with_setter(|s: &mut Self, _, value: f32| s.knock_back_force = value)
-            .with_default(DEFAULT_KNOCK_BACK_FORCE)
-            .done();
+        let kb = self.knock_back;
 
-        builder
-            .property::<f32>(PROPERTY_MAX_SPEED)
-            .with_getter(|s: &Self, _| s.max_speed)
-            .with_setter(|s: &mut Self, _, value: f32| {
-                s.max_speed = value;
-                s.wander_buffer_zone = s.max_speed * WANDER_BUFFER_RATIO;
-            })
-            .with_default(DEFAULT_MAX_SPEED)
-            .done();
+        self.base_mut().set_velocity(kb);
+        self.base_mut().move_and_slide();
 
-        builder
-            .property::<f32>(PROPERTY_PUSH_VECTOR_FORCE)
-            .with_getter(|s: &Self, _| s.push_vector_force)
-            .with_setter(|s: &mut Self, _, value: f32| s.push_vector_force = value)
-            .with_default(DEFAULT_PUSH_VECTOR_FORCE)
-            .done();
-    }
-}
-
-#[methods]
-impl Bat {
-    #[method]
-    fn _ready(&mut self, #[base] owner: TRef<KinematicBody2D>) {
-        load_resource! { scene: PackedScene = "Effects/EnemyDeathEffect.tscn" {
-            self.effect = Some(scene.claim())
-        } }
-
-        self.blink_animation =
-            Some(child_node!(claim owner["BlinkAnimationPlayer"]: AnimationPlayer));
-        self.hurt_box = Some(child_node!(claim owner["HurtBox"]: Node2D));
-        self.player_detection = Some(child_node!(claim owner["PlayerDetectionZone"]: Area2D));
-        self.soft_collision = Some(child_node!(claim owner["SoftCollision"]: Area2D));
-        self.sprite = Some(child_node!(claim owner["AnimatedSprite"]: AnimatedSprite));
-        self.stats = Some(child_node!(owner["Stats"]));
-        self.wander_controller = Some(child_node!(claim owner["WanderController"]: Node2D));
-
-        self.state = self.pick_random_state();
-    }
-
-    #[method]
-    fn _physics_process(&mut self, #[base] owner: TRef<KinematicBody2D>, delta: f32) {
-        self.knock_back = owner.move_and_slide(
-            self.knock_back
-                .move_toward(Vector2::new(0.0, 0.0), self.friction * delta),
-            Vector2::new(0.0, 0.0),
-            false,
-            4,
-            FRAC_PI_4,
-            true,
-        );
+        self.knock_back = self.base().get_velocity();
 
         match self.state {
             BatState::Chase => {
-                let player = call!(self.player_detection; METHOD_GET_PLAYER: KinematicBody2D);
+                let can_see = self
+                    .player_detection
+                    .as_ref()
+                    .map(|pd| {
+                        pd.clone()
+                            .cast::<PlayerDetectionZone>()
+                            .bind()
+                            .can_see_player()
+                    })
+                    .unwrap_or(false);
 
-                if let Ok(player) = player {
-                    let direction = owner
-                        .global_position()
-                        .direction_to(unsafe { player.assume_safe() }.global_position());
+                if can_see {
+                    let player_variant = self
+                        .player_detection
+                        .as_ref()
+                        .map(|pd| pd.clone().cast::<PlayerDetectionZone>().bind().get_player())
+                        .unwrap_or(Variant::nil());
 
-                    self.accelerate_towards(direction, delta);
+                    if let Ok(player) = player_variant.try_to::<Gd<Node2D>>() {
+                        let my_pos = self.base().get_global_position();
+                        let player_pos = player.get_global_position();
+                        let direction = my_pos.direction_to(player_pos);
+                        self.accelerate_towards(direction, delta);
+                    } else {
+                        self.state = BatState::Idle;
+                    }
                 } else {
-                    self.state = BatState::Idle
+                    self.state = BatState::Idle;
                 }
             }
             BatState::Idle => {
-                self.seek_player(owner);
+                self.seek_player();
                 self.next_state_on_finish(3.0);
 
                 self.velocity = self
                     .velocity
-                    .move_toward(Vector2::new(0.0, 0.0), self.friction * delta);
+                    .move_toward(Vector2::ZERO, self.friction * delta);
             }
             BatState::Wander => {
-                self.seek_player(owner);
+                self.seek_player();
                 self.next_state_on_finish(3.0);
 
-                let target_position = get_parameter!(
-                    self.wander_controller.unwrap(); PROPERTY_TARGET_POSITION
-                )
-                .try_to::<Vector2>()
-                .unwrap_or(Vector2::new(0.0, 0.0));
+                let target_position = self
+                    .wander_controller
+                    .as_ref()
+                    .map(|wc| wc.clone().cast::<WanderController>().bind().target_position)
+                    .unwrap_or(Vector2::ZERO);
 
-                let direction = owner.global_position().direction_to(target_position);
+                let my_pos = self.base().get_global_position();
+                let direction = my_pos.direction_to(target_position);
 
                 self.accelerate_towards(direction, delta);
 
-                if owner.global_position().distance_to(target_position) <= self.wander_buffer_zone {
+                if my_pos.distance_to(target_position) <= self.wander_buffer_zone {
                     self.next_state(3.0);
                 }
             }
         }
 
-        if call!(self.soft_collision; METHOD_IS_COLLIDING)
-            .try_to::<bool>()
-            .unwrap_or(false)
+        // soft collision push
+        let is_colliding = self
+            .soft_collision
+            .as_ref()
+            .map(|sc| sc.clone().cast::<SoftCollision>().bind().is_colliding())
+            .unwrap_or(false);
+
+        if is_colliding {
+            let push_vector = self
+                .soft_collision
+                .as_ref()
+                .map(|sc| sc.clone().cast::<SoftCollision>().bind().get_push_vector())
+                .unwrap_or(Vector2::ZERO);
+
+            self.velocity += push_vector * delta * self.push_vector_force;
+        }
+
+        // flip sprite based on the movement direction
+        if self.velocity != Vector2::ZERO
+            && let Some(sprite) = self.sprite.as_mut()
         {
-            self.velocity += call!(self.soft_collision; METHOD_GET_PUSH_VECTOR)
-                .try_to::<Vector2>()
-                .unwrap_or(Vector2::new(0.0, 0.0))
-                * delta
-                * self.push_vector_force;
+            sprite.set_flip_h(self.velocity.x < 0.0);
         }
 
-        // move flip logic here for all movement states
-        // check for stopped bat to keep last direction
-        if self.velocity != Vector2::new(0.0, 0.0) {
-            assume_safe!(self.sprite).set_flip_h(self.velocity.x < 0.0);
-        }
+        let vel = self.velocity;
 
-        owner.move_and_slide(
-            self.velocity,
-            Vector2::new(0.0, 0.0),
-            false,
-            4,
-            FRAC_PI_4,
-            true,
-        );
+        self.base_mut().set_velocity(vel);
+        self.base_mut().move_and_slide();
     }
 
+    fn ready(&mut self) {
+        self.effect = Some(load::<PackedScene>("res://Effects/EnemyDeathEffect.tscn"));
+
+        self.blink_animation = Some(
+            self.base()
+                .get_node_as::<AnimationPlayer>("BlinkAnimationPlayer"),
+        );
+
+        self.hurt_box = Some(self.base().get_node_as::<Area2D>("HurtBox"));
+        self.player_detection = Some(self.base().get_node_as::<Area2D>("PlayerDetectionZone"));
+        self.soft_collision = Some(self.base().get_node_as::<Area2D>("SoftCollision"));
+
+        self.sprite = Some(
+            self.base()
+                .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D"),
+        );
+
+        self.stats = Some(self.base().get_node_as::<Node>("Stats"));
+        self.wander_controller = Some(self.base().get_node_as::<Node2D>("WanderController"));
+        self.state = self.pick_random_state();
+    }
+}
+
+#[godot_api]
+impl Bat {
     #[inline]
     fn accelerate_towards(&mut self, direction: Vector2, delta: f32) {
         self.velocity = self
@@ -247,17 +232,28 @@ impl Bat {
     fn next_state(&mut self, max_secs: f64) {
         self.state = self.pick_random_state();
 
-        call!(
-            self.wander_controller;
-            METHOD_START_TIMER(self.rand.randf_range(1.0, max_secs).to_variant())
-        );
+        if let Some(wc) = self.wander_controller.as_ref() {
+            let duration = self.rand.randf_range(1.0, max_secs as f32);
+
+            wc.clone()
+                .cast::<WanderController>()
+                .bind_mut()
+                .start_timer(duration as f64);
+        }
     }
 
     #[inline]
     fn next_state_on_finish(&mut self, max_secs: f64) {
-        let timer_complete = call!(self.wander_controller; METHOD_IS_TIMER_COMPLETE)
-            .try_to::<bool>()
-            .unwrap_or(false);
+        let timer_complete = self
+            .wander_controller
+            .as_ref()
+            .map(|wc| {
+                wc.clone()
+                    .cast::<WanderController>()
+                    .bind()
+                    .is_timer_complete()
+            })
+            .unwrap_or(true);
 
         if timer_complete {
             self.next_state(max_secs);
@@ -265,17 +261,23 @@ impl Bat {
     }
 
     #[inline]
-    fn seek_player(&mut self, _owner: TRef<'_, KinematicBody2D>) {
-        let can_see_player = call!(self.player_detection; METHOD_CAN_SEE_PLAYER)
-            .try_to::<bool>()
+    fn seek_player(&mut self) {
+        let can_see = self
+            .player_detection
+            .as_ref()
+            .map(|pd| {
+                pd.clone()
+                    .cast::<PlayerDetectionZone>()
+                    .bind()
+                    .can_see_player()
+            })
             .unwrap_or(false);
-        if can_see_player {
-            self.state = BatState::Chase
+
+        if can_see {
+            self.state = BatState::Chase;
         }
     }
 
-    // this did not need the overhead of lists and list manipulation,
-    // so this is my simplified solution
     #[inline]
     fn pick_random_state(&mut self) -> BatState {
         if self.rand.randi_range(1, 2) == 1 {
@@ -285,65 +287,61 @@ impl Bat {
         }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(
-        &mut self,
-        #[base] owner: TRef<KinematicBody2D>,
-        area: Ref<Area2D>,
-    ) {
-        let damage = get_parameter!(area[PROPERTY_DAMAGE])
-            .try_to::<i64>()
-            .unwrap_or(0);
-        let stats = self.stats.unwrap();
-        let current_health = get_parameter!(stats; PROPERTY_HEALTH)
-            .try_to::<i64>()
-            .unwrap_or(0);
-        let new_health = current_health - damage;
+    #[func]
+    fn _on_hurt_box_area_entered(&mut self, area: Gd<Area2D>) {
+        let damage = area.get(PROPERTY_DAMAGE).try_to::<i64>().unwrap_or(0);
 
-        set_parameter!(stats; PROPERTY_HEALTH = new_health.to_variant());
+        if let Some(stats) = self.stats.as_mut() {
+            let current_health = stats.get(PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+            let new_health = current_health - damage;
 
-        // Verify the health was set
-        let verify_health = get_parameter!(stats; PROPERTY_HEALTH)
-            .try_to::<i64>()
-            .unwrap_or(0);
+            stats.set(PROPERTY_HEALTH, &new_health.to_variant());
 
-        // If health is 0 or below, manually call the death logic
-        if verify_health <= 0 {
-            self.play_effect_parent(&owner);
-            owner.queue_free();
-            return; // Exit early since the bat is dead
+            let verify_health = stats.get(PROPERTY_HEALTH).try_to::<i64>().unwrap_or(0);
+
+            if verify_health <= 0 {
+                let owner: Gd<Node2D> = self.base().clone().upcast();
+
+                self.play_effect_parent(&owner);
+                self.base_mut().queue_free();
+
+                return;
+            }
         }
 
-        self.knock_back = get_parameter!(area[PROPERTY_KNOCK_BACK_VECTOR])
+        self.knock_back = area
+            .get(PROPERTY_KNOCK_BACK_VECTOR)
             .try_to::<Vector2>()
-            .unwrap_or(Vector2::new(0.0, 0.0))
+            .unwrap_or(Vector2::ZERO)
             * self.knock_back_force;
 
-        call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.4.to_variant()));
-        call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);
+        if let Some(hurt_box) = self.hurt_box.as_ref() {
+            let mut hb = hurt_box.clone().cast::<HurtBox>();
+
+            hb.bind_mut().start_invincibility(0.4);
+            hb.bind_mut().play_hit_effect();
+        }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_ended(&self, #[base] _owner: TRef<KinematicBody2D>) {
-        assume_safe!(self.blink_animation).play("Stop", -1.0, 1.0, false);
+    #[func]
+    fn _on_hurt_box_invincibility_ended(&mut self) {
+        if let Some(anim) = self.blink_animation.as_mut() {
+            anim.play_ex().name("Stop").done();
+        }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_started(&self, #[base] _owner: TRef<KinematicBody2D>) {
-        assume_safe!(self.blink_animation).play("Start", -1.0, 1.0, false);
+    #[func]
+    fn _on_hurt_box_invincibility_started(&mut self) {
+        if let Some(anim) = self.blink_animation.as_mut() {
+            anim.play_ex().name("Start").done();
+        }
     }
 
-    // when connecting signal in the godot editor, click the "advanced" switch
-    // and select the "deferred" option, otherwise an exception occurs
-    // todo: figure out why this is necessary
+    #[func]
+    fn _on_stats_no_health(&mut self) {
+        let owner: Gd<Node2D> = self.base().clone().upcast();
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_Stats_no_health(&self, #[base] owner: TRef<KinematicBody2D>) {
         self.play_effect_parent(&owner);
-        owner.queue_free();
+        self.base_mut().queue_free();
     }
 }

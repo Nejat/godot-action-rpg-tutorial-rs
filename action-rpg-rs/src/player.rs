@@ -1,23 +1,13 @@
-use std::f64::consts::FRAC_PI_4;
-
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{
+    AnimationNodeStateMachinePlayback, AnimationPlayer, AnimationTree, Area2D, CharacterBody2D,
+    ICharacterBody2D, Input, PackedScene,
+};
+use godot::prelude::*;
 
 use crate::has_effect::HasEffect;
-use crate::hurt_box::{METHOD_PLAY_HIT_EFFECT, METHOD_START_INVINCIBILITY};
+use crate::hurt_box::HurtBox;
 use crate::stats::PROPERTY_HEALTH;
 use crate::sword::PROPERTY_KNOCK_BACK_VECTOR;
-use crate::{
-    assume_safe, auto_load, blend_position, call, child_node, get_parameter, load_resource,
-    set_parameter,
-};
-
-type AnimationPlayback = AnimationNodeStateMachinePlayback;
-
-pub(crate) const PROPERTY_ACCELERATION: &str = "acceleration";
-pub(crate) const PROPERTY_FRICTION: &str = "friction";
-pub(crate) const PROPERTY_MAX_SPEED: &str = "max_speed";
-pub(crate) const PROPERTY_ROLL_SPEED: &str = "roll_speed";
 
 const DEFAULT_ACCELERATION: f32 = 500.0;
 const DEFAULT_FRICTION: f32 = 500.0;
@@ -43,36 +33,42 @@ enum PlayerState {
     Roll,
 }
 
-#[derive(NativeClass)]
-#[inherit(KinematicBody2D)]
-#[register_with(Self::register)]
+#[derive(GodotClass)]
+#[class(base=CharacterBody2D)]
 pub struct Player {
-    #[property]
-    acceleration: f32,
-    // todo: when using Ref<T>, the placeholder values in "fn new" cause the following warning in godot
-    // todo: "WARNING: cleanup: ObjectDB instances leaked at exit"
-    animation_state: Option<Ref<AnimationPlayback>>,
-    animation_tree: Option<Ref<AnimationTree>>,
-    blink_animation: Option<Ref<AnimationPlayer>>,
-    #[property]
-    friction: f32,
-    hurt_box: Option<Ref<Node2D>>,
-    hurt_sound: Option<Ref<PackedScene>>,
-    effect: Option<Ref<PackedScene>>,
-    #[property]
-    max_speed: f32,
-    player_stats: Option<Ref<Node>>,
-    #[property]
-    roll_speed: f32,
+    base: Base<CharacterBody2D>,
+    #[var]
+    pub acceleration: f32,
+    animation_state: Option<Gd<AnimationNodeStateMachinePlayback>>,
+    animation_tree: Option<Gd<AnimationTree>>,
+    blink_animation: Option<Gd<AnimationPlayer>>,
+    #[var]
+    pub friction: f32,
+    hurt_box: Option<Gd<Area2D>>,
+    hurt_sound: Option<Gd<PackedScene>>,
+    effect: Option<Gd<PackedScene>>,
+    #[var]
+    pub max_speed: f32,
+    player_stats: Option<Gd<Node>>,
+    #[var]
+    pub roll_speed: f32,
     roll_vector: Vector2,
     state: PlayerState,
-    sword: Option<Ref<Area2D>>,
+    sword: Option<Gd<Area2D>>,
     velocity: Vector2,
 }
 
-impl Player {
-    fn new(_owner: TRef<KinematicBody2D>) -> Self {
+impl HasEffect for Player {
+    fn effect_scene(&self) -> &Option<Gd<PackedScene>> {
+        &self.effect
+    }
+}
+
+#[godot_api]
+impl ICharacterBody2D for Player {
+    fn init(base: Base<CharacterBody2D>) -> Self {
         Player {
+            base,
             acceleration: DEFAULT_ACCELERATION,
             animation_state: None,
             animation_tree: None,
@@ -87,270 +83,228 @@ impl Player {
             player_stats: None,
             state: PlayerState::Move,
             sword: None,
-            velocity: Vector2::new(0.0, 0.0),
+            velocity: Vector2::ZERO,
         }
     }
 
-    //noinspection DuplicatedCode
-    fn register(builder: &ClassBuilder<Self>) {
-        builder
-            .property::<f32>(PROPERTY_ACCELERATION)
-            .with_getter(|s: &Self, _| s.acceleration)
-            .with_setter(|s: &mut Self, _, value: f32| s.acceleration = value)
-            .with_default(DEFAULT_ACCELERATION)
-            .done();
+    fn ready(&mut self) {
+        let mut animation_tree = self.base().get_node_as::<AnimationTree>("AnimationTree");
 
-        builder
-            .property::<f32>(PROPERTY_FRICTION)
-            .with_getter(|s: &Self, _| s.friction)
-            .with_setter(|s: &mut Self, _, value: f32| s.friction = value)
-            .with_default(DEFAULT_FRICTION)
-            .done();
-
-        builder
-            .property::<f32>(PROPERTY_MAX_SPEED)
-            .with_getter(|s: &Self, _| s.max_speed)
-            .with_setter(|s: &mut Self, _, value: f32| s.max_speed = value)
-            .with_default(DEFAULT_MAX_SPEED)
-            .done();
-
-        builder
-            .property::<f32>(PROPERTY_ROLL_SPEED)
-            .with_getter(|s: &Self, _| s.roll_speed)
-            .with_setter(|s: &mut Self, _, value: f32| s.roll_speed = value)
-            .with_default(DEFAULT_ROLL_SPEED)
-            .done();
-    }
-}
-
-// the additional values passed to godot functions, that are not mentioned in
-// the video, are listed in the api documentation and are defaults in gdscript
-
-#[methods]
-impl Player {
-    #[method]
-    fn _ready(&mut self, #[base] owner: TRef<KinematicBody2D>) {
-        let owner_ref = owner;
-
-        child_node! { animation_tree: AnimationTree = owner_ref["AnimationTree"] }
-        get_parameter! { animation_state: AnimationPlayback = animation_tree[@"playback"] }
+        let animation_state: Gd<AnimationNodeStateMachinePlayback> = animation_tree
+            .get("parameters/playback")
+            .try_to()
+            .expect("AnimationNodeStateMachinePlayback from parameters/playback");
 
         animation_tree.set_active(true);
 
-        self.animation_tree = Some(animation_tree.claim());
-        self.animation_state = Some(animation_state.claim());
-        self.blink_animation =
-            Some(child_node!(claim owner_ref["BlinkAnimationPlayer"]: AnimationPlayer));
-        self.hurt_box = Some(child_node!(claim owner_ref["HurtBox"]: Node2D));
-        self.sword = Some(child_node!(claim owner_ref["HitboxPivot/SwordHitbox"]: Area2D));
+        self.animation_tree = Some(animation_tree);
+        self.animation_state = Some(animation_state);
 
-        load_resource! { scene: PackedScene = "Player/PlayerHurtSound.tscn" {
-            self.hurt_sound = Some(scene.claim())
-        } }
+        self.blink_animation = Some(
+            self.base()
+                .get_node_as::<AnimationPlayer>("BlinkAnimationPlayer"),
+        );
 
-        load_resource! { scene: PackedScene = "Effects/EnemyDeathEffect.tscn" {
-            self.effect = Some(scene.claim())
-        } }
+        self.hurt_box = Some(self.base().get_node_as::<Area2D>("HurtBox"));
+        self.sword = Some(self.base().get_node_as::<Area2D>("HitboxPivot/SwordHitbox"));
+        self.hurt_sound = Some(load::<PackedScene>("res://Player/PlayerHurtSound.tscn"));
+        self.effect = Some(load::<PackedScene>("res://Effects/EnemyDeathEffect.tscn"));
 
-        let player_stats = auto_load!("PlayerStats": Node);
+        let player_stats = self.base().get_node_as::<Node>("/root/PlayerStats");
 
-        // Signal connection commented out since signals are not registered in Stats
-        // player_stats
-        //     .connect(
-        //         SIGNAL_NO_HEALTH,
-        //         owner,
-        //         "_on_Stats_no_health",
-        //         VariantArray::new_shared(),
-        //         1,
-        //     )
-        //     .expect("_on_Stats_no_health to connect to player stats");
-
-        self.player_stats = Some(player_stats.claim());
+        self.player_stats = Some(player_stats);
     }
 
-    #[method]
-    fn _physics_process(&mut self, #[base] owner: TRef<KinematicBody2D>, delta: f32) {
-        let owner_ref = owner;
+    fn physics_process(&mut self, delta: f64) {
+        let delta = delta as f32;
+
         match self.state {
-            PlayerState::Move => self.move_state(owner_ref, delta),
-            PlayerState::Attack => self.attack_state(owner_ref),
-            PlayerState::Roll => self.roll_state(owner_ref),
+            PlayerState::Move => self.move_state(delta),
+            PlayerState::Attack => self.attack_state(),
+            PlayerState::Roll => self.roll_state(),
+        }
+    }
+}
+
+#[godot_api]
+impl Player {
+    #[func]
+    fn attack_animation_finished(&mut self) {
+        self.state = PlayerState::Move;
+    }
+
+    #[func]
+    fn roll_animation_finished(&mut self) {
+        self.velocity *= 0.8; // ease sliding past roll animation
+        self.state = PlayerState::Move;
+    }
+
+    #[inline]
+    fn attack_state(&mut self) {
+        self.velocity = Vector2::ZERO;
+
+        if let Some(anim_state) = self.animation_state.as_mut() {
+            anim_state.travel(TRAVEL_ATTACK);
         }
     }
 
-    #[method]
-    fn attack_animation_finished(&mut self, #[base] _owner: TRef<KinematicBody2D>) {
-        self.state = PlayerState::Move
-    }
-
-    #[method]
-    fn roll_animation_finished(&mut self, #[base] _owner: TRef<KinematicBody2D>) {
-        self.velocity *= 0.8; // ease sliding past roll animation
-        self.state = PlayerState::Move
-    }
-
     #[inline]
-    fn attack_state(&mut self, _owner: TRef<'_, KinematicBody2D>) {
-        self.velocity = Vector2::new(0.0, 0.0);
+    fn move_state(&mut self, delta: f32) {
+        let input = Input::singleton();
+        let mut input_vector = Vector2::ZERO;
 
-        assume_safe!(self.animation_state).travel(TRAVEL_ATTACK);
-    }
+        input_vector.x =
+            input.get_action_strength(INPUT_RIGHT) - input.get_action_strength(INPUT_LEFT);
 
-    #[inline]
-    fn move_state(&mut self, owner: TRef<'_, KinematicBody2D>, delta: f32) {
-        let input = Input::godot_singleton();
-        let mut input_vector = Vector2::new(0.0, 0.0);
+        input_vector.y =
+            input.get_action_strength(INPUT_DOWN) - input.get_action_strength(INPUT_UP);
 
-        input_vector.x = (input.get_action_strength(INPUT_RIGHT, false)
-            - input.get_action_strength(INPUT_LEFT, false)) as f32;
-
-        input_vector.y = (input.get_action_strength(INPUT_DOWN, false)
-            - input.get_action_strength(INPUT_UP, false)) as f32;
-
-        if input_vector != Vector2::new(0.0, 0.0) {
-            // in the video, the function "normalized" is used, which handles zero condition.
-            // godot-rust does not have that function, instead there is a try_normalize.
-            // since we only use the input_vector when it's none zero, I opted to use the
-            // "normalize" function after the check for zero.
+        if input_vector != Vector2::ZERO {
             input_vector = input_vector.normalized();
 
             self.roll_vector = input_vector;
 
-            set_parameter! { ?self.sword; PROPERTY_KNOCK_BACK_VECTOR = input_vector }
+            if let Some(sword) = self.sword.as_mut() {
+                sword.set(PROPERTY_KNOCK_BACK_VECTOR, &input_vector.to_variant());
+            }
 
-            let animation_tree = assume_safe!(self.animation_tree);
+            if let Some(anim_tree) = self.animation_tree.as_mut() {
+                anim_tree.set("parameters/Idle/blend_position", &input_vector.to_variant());
+                anim_tree.set("parameters/Run/blend_position", &input_vector.to_variant());
 
-            animation_tree.set(blend_position!("Idle"), input_vector);
-            animation_tree.set(blend_position!("Run"), input_vector);
-            animation_tree.set(blend_position!("Attack"), input_vector);
-            animation_tree.set(blend_position!("Roll"), input_vector);
+                anim_tree.set(
+                    "parameters/Attack/blend_position",
+                    &input_vector.to_variant(),
+                );
 
-            assume_safe!(self.animation_state).travel(TRAVEL_RUN);
+                anim_tree.set("parameters/Roll/blend_position", &input_vector.to_variant());
+            }
+
+            if let Some(anim_state) = self.animation_state.as_mut() {
+                anim_state.travel(TRAVEL_RUN);
+            }
 
             self.velocity = self
                 .velocity
                 .move_toward(input_vector * self.max_speed, self.acceleration * delta);
         } else {
-            assume_safe!(self.animation_state).travel(TRAVEL_IDLE);
+            if let Some(anim_state) = self.animation_state.as_mut() {
+                anim_state.travel(TRAVEL_IDLE);
+            }
 
             self.velocity = self
                 .velocity
-                .move_toward(Vector2::new(0.0, 0.0), self.friction * delta);
+                .move_toward(Vector2::ZERO, self.friction * delta);
         }
 
-        self.move_player(owner);
+        self.move_player();
 
-        if input.is_action_just_pressed(INPUT_ROLL, false) {
-            self.state = PlayerState::Roll
+        if input.is_action_just_pressed(INPUT_ROLL) {
+            self.state = PlayerState::Roll;
         }
 
-        if input.is_action_just_pressed(INPUT_ATTACK, false) {
-            self.state = PlayerState::Attack
+        if input.is_action_just_pressed(INPUT_ATTACK) {
+            self.state = PlayerState::Attack;
         }
     }
 
     #[inline]
-    fn roll_state(&mut self, owner: TRef<'_, KinematicBody2D>) {
+    fn roll_state(&mut self) {
         self.velocity = self.roll_vector * self.roll_speed;
 
-        assume_safe!(self.animation_state).travel(TRAVEL_ROLL);
+        if let Some(anim_state) = self.animation_state.as_mut() {
+            anim_state.travel(TRAVEL_ROLL);
+        }
 
-        self.move_player(owner);
+        self.move_player();
     }
 
     #[inline]
-    fn move_player(&mut self, owner: TRef<'_, KinematicBody2D>) {
-        // FRAC_PI_4 was suggested by c-lion ide as an approximate constant of the
-        // documented default value of 0.785398 for "floor_max_angle"
+    fn move_player(&mut self) {
+        let vel = self.velocity;
 
-        self.velocity = owner.move_and_slide(
-            self.velocity,
-            Vector2::new(0.0, 0.0),
-            false,
-            4,
-            FRAC_PI_4,
-            true,
-        );
+        self.base_mut().set_velocity(vel);
+        self.base_mut().move_and_slide();
+
+        self.velocity = self.base().get_velocity();
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_HurtBox_area_entered(
-        &mut self,
-        #[base] owner: TRef<KinematicBody2D>,
-        _area: Ref<Area2D>,
-    ) {
+    #[func]
+    fn _on_hurt_box_area_entered(&mut self, _area: Gd<Area2D>) {
         // enemy hit box does not have damage, the video "fix" causes a bug
-        // let damage = get_parameter!(area[PROPERTY_DAMAGE]).to_i64();
-        let player_stats = self.player_stats.unwrap();
-        let current_health = get_parameter!(player_stats; PROPERTY_HEALTH)
-            .try_to::<i64>()
-            .unwrap_or(0);
-        let new_health = current_health - 1;
+        if let Some(player_stats) = self.player_stats.as_mut() {
+            let current_health = player_stats
+                .get(PROPERTY_HEALTH)
+                .try_to::<i64>()
+                .unwrap_or(0);
 
-        set_parameter!(player_stats; PROPERTY_HEALTH = new_health.to_variant());
+            let new_health = current_health - 1;
 
-        // Verify the health was set
-        let verify_health = get_parameter!(player_stats; PROPERTY_HEALTH)
-            .try_to::<i64>()
-            .unwrap_or(0);
+            player_stats.set(PROPERTY_HEALTH, &new_health.to_variant());
 
-        // Manually update the health UI since signals aren't working
-        if let Some(scene_tree) = owner.get_tree()
-            && let Some(current_scene) = unsafe { scene_tree.assume_safe() }.current_scene()
-            && let Some(health_ui) =
-                unsafe { current_scene.assume_safe() }.get_node("CanvasLayer/HealthUI")
+            let verify_health = player_stats
+                .get(PROPERTY_HEALTH)
+                .try_to::<i64>()
+                .unwrap_or(0);
+
+            // Manually update the health UI since signals may not be working
+            {
+                let tree = self.base().get_tree();
+
+                if let Some(current_scene) = tree.get_current_scene()
+                    && let Some(mut health_ui) =
+                        current_scene.get_node_or_null("CanvasLayer/HealthUI")
+                {
+                    health_ui.call("set_hearts", &[verify_health.to_variant()]);
+                }
+            }
+
+            // If health is 0 or below, player death
+            if verify_health <= 0 {
+                let owner: Gd<Node2D> = self.base().clone().upcast();
+
+                self.play_effect_parent(&owner);
+                self.base_mut().queue_free();
+
+                return;
+            }
+        }
+
+        if let Some(hurt_box) = self.hurt_box.as_ref() {
+            let mut hb = hurt_box.clone().cast::<HurtBox>();
+
+            hb.bind_mut().start_invincibility(0.5);
+            hb.bind_mut().play_hit_effect();
+        }
+
+        // Spawn hurt sound
+        if let Some(hurt_sound_scene) = self.hurt_sound.as_ref()
+            && let Some(instance) = hurt_sound_scene.instantiate()
         {
-            unsafe {
-                health_ui
-                    .assume_safe()
-                    .call("set_hearts", &[verify_health.to_variant()]);
-            }
-        }
+            let tree = self.base().get_tree();
 
-        // If health is 0 or below, manually call the death logic
-        if verify_health <= 0 {
-            // Player death logic - play death effect then remove player
-            self.play_effect_parent(&owner);
-            owner.queue_free();
-            return; // Exit early since the player is dead
-        }
-
-        call!(self.hurt_box; METHOD_START_INVINCIBILITY(0.5.to_variant()));
-        call!(self.hurt_box; METHOD_PLAY_HIT_EFFECT);
-
-        let scene = assume_safe!(self.hurt_sound);
-
-        assume_safe! {
-            let instance: Node = scene.instance(PackedScene::GEN_EDIT_STATE_DISABLED),
-            let root: SceneTree = Node::get_tree(&owner),
-            let scene: Node = root.current_scene() => {
-                scene.add_child(instance, false);
+            if let Some(mut current_scene) = tree.get_current_scene() {
+                current_scene.add_child(&instance);
             }
         }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_ended(&self, #[base] _owner: TRef<KinematicBody2D>) {
-        assume_safe!(self.blink_animation).play("Stop", -1.0, 1.0, false);
+    #[func]
+    fn _on_hurt_box_invincibility_ended(&mut self) {
+        if let Some(anim) = self.blink_animation.as_mut() {
+            anim.play_ex().name("Stop").done();
+        }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_HurtBox_invincibility_started(&self, #[base] _owner: TRef<KinematicBody2D>) {
-        assume_safe!(self.blink_animation).play("Start", -1.0, 1.0, false);
+    #[func]
+    fn _on_hurt_box_invincibility_started(&mut self) {
+        if let Some(anim) = self.blink_animation.as_mut() {
+            anim.play_ex().name("Start").done();
+        }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_Stats_no_health(&self, #[base] owner: TRef<KinematicBody2D>) {
-        owner.queue_free();
-    }
-}
-
-impl HasEffect for Player {
-    fn effect_scene(&self) -> &Option<Ref<PackedScene>> {
-        &self.effect
+    #[func]
+    fn _on_stats_no_health(&mut self) {
+        self.base_mut().queue_free();
     }
 }

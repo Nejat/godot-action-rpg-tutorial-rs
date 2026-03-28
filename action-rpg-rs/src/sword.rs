@@ -1,48 +1,28 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{Area2D, IArea2D};
+use godot::prelude::*;
 
 pub(crate) const PROPERTY_DAMAGE: &str = "damage";
 pub(crate) const PROPERTY_KNOCK_BACK_VECTOR: &str = "knock_back_vector";
 
 const DEFAULT_DAMAGE: i64 = 1;
 
-#[derive(NativeClass)]
-#[inherit(Area2D)]
-#[register_with(Self::register)]
+#[derive(GodotClass)]
+#[class(base=Area2D)]
 pub struct Sword {
-    #[property]
-    damage: i64,
-    #[property]
-    knock_back_vector: Vector2,
+    base: Base<Area2D>,
+    #[var]
+    pub damage: i64,
+    #[var]
+    pub knock_back_vector: Vector2,
 }
 
-impl Sword {
-    fn new(_owner: &Area2D) -> Self {
+#[godot_api]
+impl IArea2D for Sword {
+    fn init(base: Base<Area2D>) -> Self {
         Sword {
-            damage: 1,
-            knock_back_vector: Vector2::new(0.0, 0.0),
+            base,
+            damage: DEFAULT_DAMAGE,
+            knock_back_vector: Vector2::ZERO,
         }
     }
-
-    fn register(builder: &ClassBuilder<Self>) {
-        builder
-            .property::<i64>(PROPERTY_DAMAGE)
-            .with_getter(|s: &Self, _| s.damage)
-            .with_setter(|s: &mut Self, _, value: i64| s.damage = value)
-            .with_default(DEFAULT_DAMAGE)
-            .done();
-
-        builder
-            .property::<Vector2>(PROPERTY_KNOCK_BACK_VECTOR)
-            .with_getter(|s: &Self, _| s.knock_back_vector)
-            .with_setter(|s: &mut Self, _, value: Vector2| s.knock_back_vector = value)
-            .with_usage(PropertyUsage::NOEDITOR)
-            .done();
-    }
-}
-
-#[methods]
-impl Sword {
-    #[method]
-    fn _ready(&mut self, #[base] _owner: TRef<Area2D>) {}
 }

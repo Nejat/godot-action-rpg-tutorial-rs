@@ -1,37 +1,31 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{AnimatedSprite2D, IAnimatedSprite2D};
+use godot::prelude::*;
 
-#[derive(NativeClass)]
-#[inherit(AnimatedSprite)]
-pub struct Effect;
+#[derive(GodotClass)]
+#[class(base=AnimatedSprite2D)]
+pub struct Effect {
+    base: Base<AnimatedSprite2D>,
+}
 
-impl Effect {
-    fn new(_owner: TRef<AnimatedSprite>) -> Self {
-        Effect
+#[godot_api]
+impl IAnimatedSprite2D for Effect {
+    fn init(base: Base<AnimatedSprite2D>) -> Self {
+        Effect { base }
+    }
+
+    fn ready(&mut self) {
+        let callable = self.base().callable("_on_animation_finished");
+
+        self.base_mut().connect("animation_finished", &callable);
+        self.base_mut().set_frame(0);
+        self.base_mut().play_ex().name("Animate").done();
     }
 }
 
-#[methods]
+#[godot_api]
 impl Effect {
-    #[method]
-    fn _ready(&mut self, #[base] owner: TRef<AnimatedSprite>) {
-        owner
-            .connect(
-                "animation_finished",
-                owner,
-                "_on_animation_finished",
-                VariantArray::new_shared(),
-                1,
-            )
-            .expect("_on_animation_finished to connect to effect instance");
-
-        owner.set_frame(0);
-        owner.play("Animate", false);
-    }
-
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_animation_finished(&mut self, #[base] owner: TRef<AnimatedSprite>) {
-        owner.queue_free();
+    #[func]
+    fn _on_animation_finished(&mut self) {
+        self.base_mut().queue_free();
     }
 }

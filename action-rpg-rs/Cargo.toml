@@ -1,13 +1,13 @@
 [package]
 name = "action-rpg-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-gdnative = "0.11.3"
+godot = "0.5"
 
 [profile.release]
 lto = true

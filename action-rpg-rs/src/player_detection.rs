@@ -1,63 +1,42 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{Area2D, IArea2D};
+use godot::prelude::*;
 
-pub(crate) const METHOD_CAN_SEE_PLAYER: &str = "can_see_player";
-pub(crate) const METHOD_GET_PLAYER: &str = "get_player";
-
-pub(crate) const PROPERTY_PLAYER: &str = "player";
-
-#[derive(NativeClass)]
-#[inherit(Area2D)]
-#[register_with(Self::register)]
+#[derive(GodotClass)]
+#[class(base=Area2D)]
 pub struct PlayerDetectionZone {
-    #[property(no_editor)]
-    player: Option<Ref<Node>>,
+    base: Base<Area2D>,
+    player: Option<Gd<Node2D>>,
 }
 
-impl PlayerDetectionZone {
-    fn new(_owner: TRef<Area2D>) -> Self {
-        PlayerDetectionZone { player: None }
-    }
-
-    fn register(builder: &ClassBuilder<Self>) {
-        builder
-            .property::<Option<Ref<Node>>>(PROPERTY_PLAYER)
-            .with_getter(|s: &Self, _| s.player)
-            .with_setter(|s: &mut Self, _, value: Option<Ref<Node>>| s.player = value)
-            .with_usage(PropertyUsage::NOEDITOR)
-            .done();
+#[godot_api]
+impl IArea2D for PlayerDetectionZone {
+    fn init(base: Base<Area2D>) -> Self {
+        PlayerDetectionZone { base, player: None }
     }
 }
 
-#[methods]
+#[godot_api]
 impl PlayerDetectionZone {
-    #[method]
-    pub(crate) fn can_see_player(&self, #[base] _owner: TRef<Area2D>) -> bool {
+    #[func]
+    pub fn can_see_player(&self) -> bool {
         self.player.is_some()
     }
 
-    #[method]
-    pub(crate) fn get_player(&self, #[base] _owner: TRef<Area2D>) -> Variant {
-        self.player.to_variant()
+    #[func]
+    pub fn get_player(&self) -> Variant {
+        match &self.player {
+            Some(p) => p.to_variant(),
+            None => Variant::nil(),
+        }
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_PlayerDetectionZone_body_entered(
-        &mut self,
-        #[base] _owner: TRef<Area2D>,
-        body: Ref<Node>,
-    ) {
+    #[func]
+    fn _on_player_detection_zone_body_entered(&mut self, body: Gd<Node2D>) {
         self.player = Some(body);
     }
 
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_PlayerDetectionZone_body_exited(
-        &mut self,
-        #[base] _owner: TRef<Area2D>,
-        _body: Ref<Node>,
-    ) {
-        self.player = None
+    #[func]
+    fn _on_player_detection_zone_body_exited(&mut self, _body: Gd<Node2D>) {
+        self.player = None;
     }
 }

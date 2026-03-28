@@ -1,21 +1,23 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{AudioStreamPlayer, IAudioStreamPlayer};
+use godot::prelude::*;
 
-#[derive(NativeClass)]
-#[inherit(AudioStreamPlayer)]
-pub struct PlayerHurtSound;
+#[derive(GodotClass)]
+#[class(base=AudioStreamPlayer)]
+pub struct PlayerHurtSound {
+    base: Base<AudioStreamPlayer>,
+}
 
-impl PlayerHurtSound {
-    fn new(_owner: TRef<AudioStreamPlayer>) -> Self {
-        PlayerHurtSound
+#[godot_api]
+impl IAudioStreamPlayer for PlayerHurtSound {
+    fn init(base: Base<AudioStreamPlayer>) -> Self {
+        PlayerHurtSound { base }
     }
 }
 
-#[methods]
+#[godot_api]
 impl PlayerHurtSound {
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_PlayerHurtSound_finished(&mut self, #[base] owner: TRef<AudioStreamPlayer>) {
-        owner.queue_free();
+    #[func]
+    fn _on_player_hurt_sound_finished(&mut self) {
+        self.base_mut().queue_free();
     }
 }

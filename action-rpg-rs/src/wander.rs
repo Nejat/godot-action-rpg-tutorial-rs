@@ -1,104 +1,83 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
-
-use crate::{assume_safe, child_node, get_parameter};
+use godot::classes::{INode2D, RandomNumberGenerator, Timer};
+use godot::prelude::*;
 
 type Duration = f64;
 type WanderRange = i64;
 
-pub(crate) const METHOD_IS_TIMER_COMPLETE: &str = "is_timer_complete";
-pub(crate) const METHOD_START_TIMER: &str = "start_timer";
-
-pub(crate) const PROPERTY_TARGET_POSITION: &str = "target_position";
-pub(crate) const PROPERTY_WANDER_RANGE: &str = "wander_ranger";
-
 const DEFAULT_WANDER_RANGE: WanderRange = 32;
 
-#[derive(NativeClass)]
-#[inherit(Node2D)]
-#[register_with(Self::register)]
+#[derive(GodotClass)]
+#[class(base=Node2D)]
 pub struct WanderController {
-    rand: Ref<RandomNumberGenerator, Unique>,
+    base: Base<Node2D>,
+    rand: Gd<RandomNumberGenerator>,
     start_position: Vector2,
-    #[property]
-    target_position: Vector2,
-    timer: Option<Ref<Timer>>,
-    #[property]
-    wander_ranger: WanderRange,
+    #[var]
+    pub target_position: Vector2,
+    timer: Option<Gd<Timer>>,
+    #[var]
+    pub wander_ranger: WanderRange,
 }
 
-impl WanderController {
-    fn new(_owner: TRef<Node2D>) -> Self {
+#[godot_api]
+impl INode2D for WanderController {
+    fn init(base: Base<Node2D>) -> Self {
         WanderController {
-            rand: RandomNumberGenerator::new(),
-            start_position: Vector2::new(0.0, 0.0),
-            target_position: Vector2::new(0.0, 0.0),
+            base,
+            rand: RandomNumberGenerator::new_gd(),
+            start_position: Vector2::ZERO,
+            target_position: Vector2::ZERO,
             timer: None,
             wander_ranger: DEFAULT_WANDER_RANGE,
         }
     }
 
-    fn register(builder: &ClassBuilder<Self>) {
-        builder
-            .property::<i64>(PROPERTY_WANDER_RANGE)
-            .with_getter(|s: &Self, _| s.wander_ranger)
-            .with_setter(|s: &mut Self, _, value| s.wander_ranger = value)
-            .with_default(DEFAULT_WANDER_RANGE)
-            .done();
+    fn ready(&mut self) {
+        self.start_position = self.base().get_global_position();
 
-        builder
-            .property::<Vector2>(PROPERTY_TARGET_POSITION)
-            .with_getter(|s: &Self, _| s.target_position)
-            .with_setter(|s: &mut Self, _, value| s.target_position = value)
-            .with_usage(PropertyUsage::NOEDITOR)
-            .done();
+        let timer = self.base().get_node_as::<Timer>("Timer");
+
+        self.timer = Some(timer);
+
+        // bats seemed to have the same pattern if they
+        // were not interrupted by a chase state, this fixed that
+        self.rand.randomize();
+        self.update_target_position();
     }
 }
 
-#[methods]
+#[godot_api]
 impl WanderController {
-    #[method]
-    fn _ready(&mut self, #[base] owner: TRef<Node2D>) {
-        let owner_ref = owner;
-        self.start_position = owner_ref.global_position();
-        self.timer = Some(child_node!(claim owner_ref["Timer"]: Timer));
+    #[func]
+    pub fn is_timer_complete(&self) -> bool {
+        self.timer
+            .as_ref()
+            .map(|t| t.get_time_left() == 0.0)
+            .unwrap_or(true)
+    }
 
-        // bats seemed to have to the same pattern if they
-        // were not interrupted by a chase state, this fixed that
-        self.rand.randomize();
+    #[func]
+    pub fn start_timer(&mut self, duration: Duration) {
+        if let Some(timer) = self.timer.as_mut() {
+            timer.start_ex().time_sec(duration).done();
+        }
+    }
 
+    #[func]
+    fn _on_timer_timeout(&mut self) {
         self.update_target_position();
     }
 
-    #[method]
-    fn is_timer_complete(&self, #[base] _owner: TRef<Node2D>) -> bool {
-        get_parameter!(self.timer.unwrap(); "time_left")
-            .try_to::<f64>()
-            .unwrap_or(0.0)
-            == 0.0
-    }
-
-    #[method]
-    fn start_timer(&self, #[base] _owner: TRef<Node2D>, duration: Duration) {
-        assume_safe!(self.timer).start(duration);
-    }
-
-    #[method]
-    #[allow(non_snake_case)]
-    fn _on_Timer_timeout(&mut self, #[base] _owner: TRef<Node2D>) {
-        self.update_target_position()
-    }
-
     #[inline]
-    fn random_wander_range(&self) -> f32 {
+    fn random_wander_range(&mut self) -> f32 {
         self.rand
-            .randf_range(-self.wander_ranger as f64, self.wander_ranger as f64) as f32
+            .randf_range(-self.wander_ranger as f32, self.wander_ranger as f32)
     }
 
     #[inline]
     fn update_target_position(&mut self) {
         let target_vector = Vector2::new(self.random_wander_range(), self.random_wander_range());
 
-        self.target_position = self.start_position + target_vector
+        self.target_position = self.start_position + target_vector;
     }
 }

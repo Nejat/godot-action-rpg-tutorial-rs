@@ -1,31 +1,35 @@
-use gdnative::api::*;
-use gdnative::prelude::*;
+use godot::classes::{Camera2D, ICamera2D, Marker2D};
+use godot::prelude::*;
 
-use crate::child_node;
-
-#[derive(NativeClass)]
-#[inherit(Camera2D)]
-pub struct PlayerCamera;
-
-impl PlayerCamera {
-    fn new(_owner: TRef<Camera2D>) -> Self {
-        PlayerCamera
-    }
+#[derive(GodotClass)]
+#[class(base=Camera2D)]
+pub struct PlayerCamera {
+    base: Base<Camera2D>,
 }
 
-#[methods]
-impl PlayerCamera {
-    #[method]
-    fn _ready(&mut self, #[base] owner: TRef<Camera2D>) {
-        let owner_ref = owner;
-        let top_left = child_node!(owner_ref["Limits/TopLeft"]: Position2D).position();
+#[godot_api]
+impl ICamera2D for PlayerCamera {
+    fn init(base: Base<Camera2D>) -> Self {
+        PlayerCamera { base }
+    }
 
-        owner_ref.set("limit_top", top_left.y);
-        owner_ref.set("limit_left", top_left.x);
+    fn ready(&mut self) {
+        let top_left = self.base().get_node_as::<Marker2D>("Limits/TopLeft");
+        let top_left_pos = top_left.get_position();
 
-        let bottom_right = child_node!(owner_ref["Limits/BottomRight"]: Position2D).position();
+        self.base_mut()
+            .set("limit_top", &(top_left_pos.y as i32).to_variant());
 
-        owner_ref.set("limit_bottom", bottom_right.y);
-        owner_ref.set("limit_right", bottom_right.x);
+        self.base_mut()
+            .set("limit_left", &(top_left_pos.x as i32).to_variant());
+
+        let bottom_right = self.base().get_node_as::<Marker2D>("Limits/BottomRight");
+        let bottom_right_pos = bottom_right.get_position();
+
+        self.base_mut()
+            .set("limit_bottom", &(bottom_right_pos.y as i32).to_variant());
+
+        self.base_mut()
+            .set("limit_right", &(bottom_right_pos.x as i32).to_variant());
     }
 }
